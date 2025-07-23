@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import './App.css';
-import { usePlayerSearch, useRandomPlayer } from './hooks/useNHLData';
+import { usePlayerSearch, useRandomPlayer } from '../../Scripts/useNHLData';
 
 function App() {
   const [guesses, setGuesses] = useState([]);
@@ -13,18 +13,19 @@ function App() {
   const [hasLost, setHasLost] = useState(false);
   const [showManualPicker, setShowManualPicker] = useState(false);
   const [showNewPlayerOptions, setShowNewPlayerOptions] = useState(false);
+/*
   const [filterOptions, setFilterOptions] = useState({
   isActive: true,
   teamId: '',
   minGames: '',
   maxGames: ''
 });
-
+*/
   const [showWelcomePopup, setShowWelcomePopup] = useState(true);
 
   const shouldBlur = showSearch || showManualPicker || (showNewPlayerOptions && !showSearch && !showManualPicker) || showWelcomePopup;
 
-  const { results, loading, error } = usePlayerSearch(query);
+  const { results} = usePlayerSearch(query);
   const {
     player: randomPlayer,
     loading: randomLoading,
@@ -46,6 +47,7 @@ const handleNewPlayer = async () => {
   setRevealedHints([]); // Explicitly reset hints
 };
 
+/*
 const fetchFilteredRandomPlayer = async (filters) => {
   const params = new URLSearchParams();
 
@@ -79,7 +81,7 @@ const fetchFilteredRandomPlayer = async (filters) => {
     alert('No players found with those filters.');
   }
 };
-
+*/
 
 
 
@@ -210,11 +212,11 @@ const handleGuess = (player = selectedPlayer) => {
 )}
 
 
-      <img src="5320889F-C24B-44FF-BA4F-626C46DCAB12.png" className={`puck-logo ${shouldBlur ? 'blur' : ''}`} />
-      <img src="9E113A00-EBF1-4458-AC2F-58895EF9131F.PNG" className={`hint-logo ${shouldBlur ? 'blur' : ''}`} />
-      <img src="BC0625CC-DCE0-4267-98EF-88D7D80B6FCA.PNG" className={`teams-logo ${shouldBlur ? 'blur' : ''}`} />
+      <img src="../src/assets/5320889F-C24B-44FF-BA4F-626C46DCAB12.png" className={`puck-logo ${shouldBlur ? 'blur' : ''}`} />
+      <img src="../src/assets/9E113A00-EBF1-4458-AC2F-58895EF9131F.PNG" className={`hint-logo ${shouldBlur ? 'blur' : ''}`} />
+      <img src="../src/assets/BC0625CC-DCE0-4267-98EF-88D7D80B6FCA.PNG" className={`teams-logo ${shouldBlur ? 'blur' : ''}`} />
       <img
-        src={revealedHints.includes(5) ? correctAnswer?.silhouette : 'question.png'}
+        src={revealedHints.includes(5) ? correctAnswer?.silhouette : '../src/assets/question.png'}
         className={`player-mug ${shouldBlur ? 'blur' : ''}`}
       />
 
