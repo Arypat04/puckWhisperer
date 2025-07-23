@@ -1,0 +1,594 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+/* Logo & Animation */
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card { padding: 2em; }
+.read-the-docs { color: #888; }
+
+/* Layout & Visuals */
+.banner {
+  position: absolute;
+  top: 0;
+  height: 100vh;
+  width: clamp(100px, 12%, 150px);
+  background-color: #683BC2;
+  border: 3px solid black;
+}
+.banner.left { left: 0; }
+.banner.right { right: 0; }
+
+.puck-logo {
+  position: absolute;
+  top: 0vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(250px, 30vw, 405px);
+  height: auto;
+  user-select: none;
+  pointer-events: none;
+}
+
+.hint-logo {
+  position: absolute;
+  top: 10vh;
+  left: 75%;
+  transform: translateX(-50%);
+  width: clamp(150px, 30vw, 305px);
+  height: auto;
+  user-select: none;
+  pointer-events: none;
+}
+
+.teams-logo {
+  position: absolute;
+  top: 10vh;
+  left: 23.5%;
+  transform: translateX(-50%);
+  width: clamp(150px, 30vw, 305px);
+  height: auto;
+  user-select: none;
+  pointer-events: none;
+}
+
+
+.player-mug {
+  position: absolute;
+  top: 37vh;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: clamp(120px, 15vw, 400px);
+  height: clamp(180px, 25vh, 500px);
+  border: 3px solid black;
+  border-radius: 10%;
+  object-fit: cover;
+  user-select: none;
+  pointer-events: none;
+}
+
+.guess-button,
+.new-player-button {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: clamp(100px, 15vw, 162px);
+  height: clamp(20px, 25vh, 40px);
+  border: 3px solid black;
+  border-radius: 8%;
+  background-color: #683BC2;
+  color: white;
+  cursor: pointer;
+  transition: 0.4s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  white-space: nowrap;
+  text-align: center;
+}
+.guess-button { top: 66vh; }
+.new-player-button { top: 60vh; }
+
+.guess-button:hover {
+  background-color: #a47ef6;
+  color: black;
+}
+
+.guess-grid {
+  position: absolute;
+  top: 69.5vh;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+}
+
+.guess-card {
+  border: #683BC2 solid 3px;
+  border-radius: 10px;
+  padding: 10px;
+  background-color: #242424;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  font-weight: bold;
+  font-size: clamp(0.8rem, 1vw, 1rem);
+  color: white;
+  width: clamp(200px, 25vw, 300px);
+  text-align: center;
+  min-height: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hint-grid {
+  position: absolute;
+  top: 90vh;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+  justify-content: center;
+  align-items: center;
+  max-width: 2;
+}
+
+.hint-button {
+  width: clamp(40px, 8vw, 70px);
+  height: clamp(30px, 5vh, 45px);
+  border: 3px solid black;
+  border-radius: 8%;
+  background-color: #683BC2;
+  color: white;
+  cursor: pointer;
+  transition: 0.4s;
+  font-size: clamp(0.7rem, 1vw, 0.7rem);
+
+}
+.hint-button:hover {
+  background-color: #a47ef6;
+  color: black;
+}
+
+.hint-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Search Bar & Input */
+.group {
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  top: 36vh;
+  right: 42%;
+  transform: translateX(-50%);
+  position: absolute;
+  width: clamp(200px, 30vw, 300px);
+  z-index: 5;
+}
+
+.input {
+  width: 100%;
+  height: 45px;
+  padding-left: 2.5rem;
+  box-shadow: 0 0 0 1.5px #2b2c37, 0 0 25px -17px #000;
+  border: 3px solid black;
+  border-radius: 10px;
+  background-color: #16171d;
+  outline: none;
+  color: #a47ef6;
+  transition: all 0.25s cubic-bezier(0.19, 1, 0.22, 1);
+  cursor: text;
+  z-index: 0;
+}
+
+.input::placeholder { color: #bdbecb; }
+.input:hover {
+  box-shadow: 0 0 0 2.5px #2f303d, 0 0 25px -15px #000;
+}
+.input:active { transform: scale(0.95); }
+.input:focus { box-shadow: 0 0 0 2.5px #2f303d; }
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  width: 1rem;
+  height: 1rem;
+  fill: #bdbecb;
+  pointer-events: none;
+  z-index: 11;
+}
+
+/* Dropdown & Overlay */
+.dropdown {
+  position: absolute;
+  right: 35%;
+  transform: translateX(-50%);
+  top: calc(36vh + 45px + 12px); /* Position below .group */
+  width: clamp(200px, 30vw, 600px); /* Same width as .group */
+  max-height: 180px;
+  overflow-y: auto;
+  background-color: #16171d;
+  border: 2px solid black;
+  border-radius: 8px;
+  z-index: 6;
+  animation: fadeInUp 0.3s ease-out forwards;
+  opacity: 0;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+}
+
+.dropdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid #333;
+  color: white;
+}
+
+.select-button {
+  padding: 4px 8px;
+  background-color: #683BC2;
+  color: white;
+  border: 1px solid black;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.select-button:hover {
+  background-color: #a47ef6;
+  color: black;
+}
+/* Overlay for blur effect */
+.overlay-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+   background: rgba(0, 0, 0, 0.5); /* darker overlay */
+  backdrop-filter: blur(6px);
+  z-index: 4;
+}
+
+/* Blur Utility */
+.blur {
+  filter: blur(3px);
+  pointer-events: none;
+  user-select: none;
+  
+}
+
+/* Animations */
+.animate-in {
+  animation: fadeInUp 0.3s ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes fadeInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0px);
+    opacity: 1;
+  }
+}
+
+.team-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+  position: absolute;
+  top: 15rem;
+  left: 10.5rem;
+  gap: 2.5rem;
+  z-index: 5;
+  width: 550px;
+  max-height: 100vh;
+  overflow-y: auto;
+  padding-left: 1rem;
+  border: 3px solid #683BC2;
+  border-radius: 12px;
+}
+
+
+.team-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100px;
+}
+
+
+.team-logo {
+  width: 125px;
+  height: 125px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 2px #000);
+  user-select: none;
+  pointer-events: none;
+}
+
+.team-years {
+  font-size: 0.8rem;
+  color: #fff;
+  opacity: 0.8;
+  text-align: center;
+}
+
+/* Hint info blocks */
+.hint-block {
+  background-color: #222;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  text-align: center;
+  width: 100%; /* full width of .hint-block-container */
+  border: 3px solid #683BC2;
+}
+
+.player-mug {
+  width: 200px;  /* Increased from 160px */
+  height: 250px; /* Increased from 160px */
+  object-fit: cover;
+  border-radius: 12px;
+  border: 4px solid #000; /* Optional: slightly thicker border */
+  top: 42vh;
+}
+
+
+.hint-block-container {
+  position: absolute;
+  top: 15rem;
+  right: 21rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;  /* makes children stretch to full container width */
+  gap: 1rem;
+  width: 300px; /* or any fixed width you prefer */
+  z-index: 5;
+  
+}
+
+
+
+.win-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.win-box {
+  background-color: #fff;
+  color: black;
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  border: 4px solid #683BC2;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.win-box h2 {
+  margin-bottom: 1rem;
+}
+
+.mugshot {
+  width: 120px;
+  height: 160px;
+  object-fit: cover;
+  border: 3px solid black;
+  border-radius: 10%;
+  margin: 1rem 0;
+}
+
+/* Dismiss Button Styles */
+.dismiss-button {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  z-index: 10;
+  padding: 8px 16px;
+  background-color: #683BC2;
+  color: white;
+  border: 2px solid black;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.dismiss-button:hover {
+  background-color: #a47ef6;
+  color: black;
+}
+
+.new-player-options {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  position: absolute;
+  top: 30vh;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+}
+
+.option-button {
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  border: 3px solid black;
+  border-radius: 8%;
+  background-color: #683BC2;
+  color: white;
+  cursor: pointer;
+  transition: 0.4s;
+}
+
+.option-button:hover {
+  background-color: #a47ef6;
+  color: black;
+}
+
+
+.lose-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.lose-box {
+  background-color: #fff;
+  color: black;
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  border: 4px solid #d32f2f; /* Red border for lose */
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.lose-box h2 {
+  margin-bottom: 1rem;
+  color: #d32f2f; /* Red text for lose */
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.new-game-button {
+  padding: 8px 16px;
+  background-color: #683BC2;
+  color: white;
+  border: 2px solid black;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.new-game-button:hover {
+  background-color: #a47ef6;
+  color: black;
+}
+
+/* Welcome Modal */
+.welcome-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.welcome-box {
+  background-color: #fff;
+  color: black;
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: left;
+  border: 4px solid #683BC2;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.welcome-box h2 {
+  margin-bottom: 1rem;
+  text-align: center;
+  color: #683BC2;
+}
+
+.welcome-box h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: #683BC2;
+}
+
+.rules-content {
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.rules-content ul {
+  margin: 0.5rem 0 1rem 1rem;
+  padding-left: 1rem;
+}
+
+.rules-content li {
+  margin-bottom: 0.3rem;
+}
+
+.rules-content p {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 1rem;
+}
+
