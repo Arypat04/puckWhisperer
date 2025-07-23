@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import { usePlayerSearch, useRandomPlayer } from '../../Scripts/useNHLData';
+import puckLogo from '../../assets/5320889F-C24B-44FF-BA4F-626C46DCAB12.png';
+import hintLogo from '../../assets/9E113A00-EBF1-4458-AC2F-58895EF9131F.PNG';
+import teamsLogo from '../../assets/BC0625CC-DCE0-4267-98EF-88D7D80B6FCA.PNG';
+import questionMark from '../../assets/question.png';
 
 function App() {
   const [guesses, setGuesses] = useState([]);
@@ -212,13 +216,14 @@ const handleGuess = (player = selectedPlayer) => {
 )}
 
 
-      <img src="../src/assets/5320889F-C24B-44FF-BA4F-626C46DCAB12.png" className={`puck-logo ${shouldBlur ? 'blur' : ''}`} />
-      <img src="../src/assets/9E113A00-EBF1-4458-AC2F-58895EF9131F.PNG" className={`hint-logo ${shouldBlur ? 'blur' : ''}`} />
-      <img src="../src/assets/BC0625CC-DCE0-4267-98EF-88D7D80B6FCA.PNG" className={`teams-logo ${shouldBlur ? 'blur' : ''}`} />
-      <img
-        src={revealedHints.includes(5) ? correctAnswer?.silhouette : '../src/assets/question.png'}
-        className={`player-mug ${shouldBlur ? 'blur' : ''}`}
-      />
+<img src={puckLogo} className={`puck-logo ${shouldBlur ? 'blur' : ''}`} />
+<img src={hintLogo} className={`hint-logo ${shouldBlur ? 'blur' : ''}`} />
+<img src={teamsLogo} className={`teams-logo ${shouldBlur ? 'blur' : ''}`} />
+<img
+  src={revealedHints.includes(5) ? correctAnswer?.silhouette : questionMark}
+  className={`player-mug ${shouldBlur ? 'blur' : ''}`}
+/>
+
 
 {!showNewPlayerOptions ? (
         <button
