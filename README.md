@@ -4,7 +4,7 @@
 
 **PuckWhisperer** is a web-based NHL guessing game where you test your hockey knowledge by guessing a mystery player in 3 tries or less. Use hints like draft info, teams played for, stats, and even a silhouette to help you win.  
 
-All to find out whether you truly know Puck.
+All to find out whether or not you truly know Puck.
 
 ---
 
