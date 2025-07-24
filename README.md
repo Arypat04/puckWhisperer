@@ -1,10 +1,10 @@
 # 🏒 PuckWhisperer
 
-![PuckWhisperer Logo](./src/assets/5320889F-C24B-44FF-BA4F-626C46DCAB12.png)
+![PuckWhisperer Logo](./Frontend/src/assets/5320889F-C24B-44FF-BA4F-626C46DCAB12.png)
 
 **PuckWhisperer** is a web-based NHL guessing game where you test your hockey knowledge by guessing a mystery player in 3 tries or less. Use hints like draft info, teams played for, stats, and even a silhouette to help you win.  
 
-All to find out whether you truly know puck.
+All to find out whether you truly know Puck.
 
 ---
 
@@ -35,7 +35,8 @@ All to find out whether you truly know puck.
 
 - **React + Vite**
 - **Node.js / Express** (for backend API)
-- **NHL API** (player data)
+- **Mongo DB** (player database)
+- **Data Collection** (using NHL API)
 - **Deployed with Render**
 
 ---
