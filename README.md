@@ -12,7 +12,7 @@ All to find out whether or not you truly know Puck.
 
 1. Click **New Player** to start a game.
 2. Use the **Hint** buttons to unlock clues:
-   - **Hint 1**: Teams and years played
+   - **Hint 1**: Years played on each team
    - **Hint 2**: Draft info
    - **Hint 3**: Jersey number & position
    - **Hint 4**: Player stats
