@@ -1,14 +1,19 @@
+/* Root container */
 #root {
-  max-width: 1280px;
+  max-width: 1600px;
   margin: 0 auto;
-  padding: 2rem;
+
   text-align: center;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.8rem, 1.5vh, 1.5rem);
 }
 
 /* Logo & Animation */
 .logo {
-  height: 6em;
-  padding: 1.5em;
+  height: 5em;
+ 
   will-change: filter;
   transition: filter 300ms;
 }
@@ -33,74 +38,220 @@
 .card { padding: 2em; }
 .read-the-docs { color: #888; }
 
-/* Layout & Visuals */
-.banner {
-  position: absolute;
-  top: 0;
-  height: 100vh;
-  width: clamp(100px, 12%, 150px);
-  background-color: #683BC2;
-  border: 3px solid black;
+/* Header Section - Main Logo */
+.header-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
-.banner.left { left: 0; }
-.banner.right { right: 0; }
+
 
 .puck-logo {
-  position: absolute;
-  top: 0vh;
-  left: 50%;
-  transform: translateX(-50%);
-  width: clamp(250px, 30vw, 405px);
+  width: clamp(100px, 15vw, 320px);
   height: auto;
   user-select: none;
   pointer-events: none;
 }
 
-.hint-logo {
-  position: absolute;
-  top: 10vh;
-  left: 75%;
-  transform: translateX(-50%);
-  width: clamp(150px, 30vw, 305px);
-  height: auto;
-  user-select: none;
-  pointer-events: none;
+/* Main Content Layout - Side by side */
+.main-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+
+  flex: 1;
+  min-height: 0;
+   /* already good, no vertical padding */
+}
+
+
+/* Left Side - Teams */
+.team-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: clamp(150px, 22vw, 280px);
+  flex-shrink: 0;
 }
 
 .teams-logo {
-  position: absolute;
-  top: 10vh;
-  left: 23.5%;
-  transform: translateX(-50%);
-  width: clamp(150px, 30vw, 305px);
+  width: clamp(80px, 10vw, 140px);
   height: auto;
+
   user-select: none;
   pointer-events: none;
 }
 
+.team-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: clamp(0.4rem, 1vw, 1rem);
+  width: 30vh;
+  max-height: clamp(200px, 25vh, 350px);
+  overflow-y: auto;
+  padding: clamp(0.6rem, 1.2vw, 1.2rem);
+  border: clamp(2px, 0.2vw, 3px) solid #683BC2;
+  border-radius: clamp(6px, 0.8vw, 12px);
+  background-color: rgba(36, 36, 36, 0.9);
+}
 
+.team-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: clamp(35px, 5vw, 65px);
+}
+
+.team-logo {
+  width: clamp(30px, 4.5vw, 60px);
+  height: clamp(30px, 4.5vw, 60px);
+  object-fit: contain;
+  filter: drop-shadow(0 0 2px #000);
+  user-select: none;
+  pointer-events: none;
+}
+
+.team-years {
+  font-size: clamp(0.5rem, 0.8vw, 0.8rem);
+  color: #fff;
+  opacity: 0.8;
+  text-align: center;
+  margin-top: clamp(2px, 0.3vh, 4px);
+}
+
+/* Center - Main Game */
+.main-game-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.5rem, 1vh, 1.2rem);
+  flex: 1;
+  justify-content: flex-start;
+  max-width: clamp(280px, 35vw, 450px);
+  margin: 0 auto;
+  padding-top: clamp(0rem, 0.2vh, 0.3rem); /* Less padding */
+}
+
+
+/* Player Image */
 .player-mug {
-  position: absolute;
-  top: 37vh;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: clamp(120px, 15vw, 400px);
-  height: clamp(180px, 25vh, 500px);
-  border: 3px solid black;
+  width: clamp(120px, 16vw, 220px);
+  height: clamp(160px, 20vh, 280px);
+  border: clamp(2px, 0.25vw, 4px) solid black;
   border-radius: 10%;
   object-fit: cover;
   user-select: none;
   pointer-events: none;
 }
 
+/* Search Section */
+.search-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.6rem, 1vh, 1rem);
+  width: 100%;
+  position: relative;
+}
+
+.group {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  position: relative;
+}
+
+.input {
+  width: 100%;
+  height: clamp(40px, 4.5vh, 50px);
+  padding-left: clamp(2.2rem, 3.5vw, 3rem);
+  box-shadow: 0 0 0 1.5px #2b2c37, 0 0 25px -17px #000;
+  border: clamp(2px, 0.2vw, 3px) solid black;
+  border-radius: clamp(6px, 0.8vw, 10px);
+  background-color: #16171d;
+  outline: none;
+  color: #a47ef6;
+  transition: all 0.25s cubic-bezier(0.19, 1, 0.22, 1);
+  cursor: text;
+  font-size: clamp(0.8rem, 1.2vw, 1.1rem);
+}
+
+.input::placeholder { color: #bdbecb; }
+.input:hover {
+  box-shadow: 0 0 0 2.5px #2f303d, 0 0 25px -15px #000;
+}
+.input:active { transform: scale(0.95); }
+.input:focus { box-shadow: 0 0 0 2.5px #2f303d; }
+
+.search-icon {
+  position: absolute;
+  left: clamp(0.8rem, 1.5vw, 1.2rem);
+  width: clamp(0.9rem, 1.3vw, 1.2rem);
+  height: clamp(0.9rem, 1.3vw, 1.2rem);
+  fill: #bdbecb;
+  pointer-events: none;
+  z-index: 11;
+}
+
+/* Dropdown positioned relative to search section */
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: clamp(8px, 1vh, 12px);
+  max-height: clamp(120px, 15vh, 180px);
+  overflow-y: auto;
+  background-color: #16171d;
+  border: clamp(1px, 0.15vw, 2px) solid black;
+  border-radius: clamp(4px, 0.6vw, 8px);
+  z-index: 6;
+  animation: fadeInUp 0.3s ease-out forwards;
+  opacity: 0;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+}
+
+.dropdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: clamp(6px, 1vh, 10px) clamp(10px, 1.5vw, 15px);
+  border-bottom: 1px solid #333;
+  color: white;
+  font-size: clamp(0.7rem, 1vw, 0.9rem);
+}
+
+.select-button {
+  padding: clamp(3px, 0.6vh, 6px) clamp(6px, 1.2vw, 10px);
+  background-color: #683BC2;
+  color: white;
+  border: 1px solid black;
+  border-radius: clamp(4px, 0.6vw, 6px);
+  cursor: pointer;
+  transition: 0.3s;
+  font-size: clamp(0.6rem, 1vw, 0.8rem);
+}
+.select-button:hover {
+  background-color: #a47ef6;
+  color: black;
+}
+
+/* Buttons Section */
+.buttons-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.8rem, 1.2vh, 1.2rem);
+}
+
 .guess-button,
 .new-player-button {
-  position: absolute;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: clamp(100px, 15vw, 162px);
-  height: clamp(20px, 25vh, 40px);
-  border: 3px solid black;
+  width: clamp(110px, 14vw, 170px);
+  height: clamp(8px, 4.5vh, 40px);
+  border: clamp(2px, 0.25vw, 3px) solid black;
   border-radius: 8%;
   background-color: #683BC2;
   color: white;
@@ -111,70 +262,117 @@
   align-items: center;
   white-space: nowrap;
   text-align: center;
+  font-size: clamp(0.8rem, 1.2vw, 1.1rem);
+  font-weight: 500;
 }
-.guess-button { top: 66vh; }
-.new-player-button { top: 60vh; }
 
-.guess-button:hover {
+.guess-button:hover,
+.new-player-button:hover {
   background-color: #a47ef6;
   color: black;
 }
 
+/* Guess Grid */
 .guess-grid {
-  position: absolute;
-  top: 69.5vh;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  justify-content: center;
+  gap: clamp(6px, 1vh, 10px);
+  width: 100%;
   align-items: center;
 }
 
 .guess-card {
-  border: #683BC2 solid 3px;
-  border-radius: 10px;
-  padding: 10px;
+  border: #683BC2 solid clamp(2px, 0.2vw, 3px);
+  border-radius: clamp(6px, 0.8vw, 10px);
+  padding: clamp(5px, 1vh, 10px);
   background-color: #242424;
   white-space: normal;
   word-wrap: break-word;
   overflow-wrap: break-word;
   font-weight: bold;
-  font-size: clamp(0.8rem, 1vw, 1rem);
+  font-size: clamp(0.7rem, 1.1vw, 1rem);
   color: white;
-  width: clamp(200px, 25vw, 300px);
+  width: 100%;
   text-align: center;
-  min-height: 10px;
+  min-height: clamp(8px, 3.5vh, 20px);
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Right Side - Hints */
+.hint-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: clamp(150px, 22vw, 280px);
+  flex-shrink: 0;
+}
+
+.hint-logo {
+  width: clamp(80px, 10vw, 140px);
+  height: auto;
+  user-select: none;
+  pointer-events: none;
+}
+
+.hint-block-container {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: clamp(0.4rem, 0.6vh, 0.8rem);
+  width: 100%;
+  max-height: clamp(200px, 25vh, 350px);
+  overflow-y: auto;
+}
+
+.hint-block {
+  background-color: #222;
+  color: white;
+  padding: clamp(6px, 1vh, 12px) clamp(8px, 1.2vw, 15px);
+  border-radius: clamp(5px, 0.6vw, 8px);
+  font-size: clamp(0.65rem, 0.9vw, 0.9rem);
+  text-align: center;
+  border: clamp(2px, 0.2vw, 3px) solid #683BC2;
+  word-wrap: break-word;
+  line-height: 1.3;
+}
+
+/* Bottom Section - Hint Buttons */
+.bottom-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+ 
+  margin-top: auto;
 }
 
 .hint-grid {
-  position: absolute;
-  top: 90vh;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   flex-direction: row;
-  gap: 5px;
+  flex-wrap: wrap;
+  gap: clamp(4px, 1vw, 10px);
   justify-content: center;
   align-items: center;
-  max-width: 2;
+  max-width: clamp(300px, 60vw, 700px);
 }
 
 .hint-button {
-  width: clamp(40px, 8vw, 70px);
-  height: clamp(30px, 5vh, 45px);
-  border: 3px solid black;
+  width: clamp(50px, 8vw, 90px);
+  height: clamp(35px, 4.5vh, 50px);
+  border: clamp(2px, 0.25vw, 3px) solid black;
   border-radius: 8%;
   background-color: #683BC2;
   color: white;
   cursor: pointer;
   transition: 0.4s;
-  font-size: clamp(0.7rem, 1vw, 0.7rem);
-
+  font-size: clamp(0.6rem, 1vw, 0.9rem);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex-shrink: 0;
 }
 .hint-button:hover {
   background-color: #a47ef6;
@@ -190,92 +388,21 @@ button:focus:not(:focus-visible) {
   outline: none;
 }
 
-/* Search Bar & Input */
-.group {
-  position: absolute;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  top: 36vh;
-  right: 42%;
-  transform: translateX(-50%);
-  position: absolute;
-  width: clamp(200px, 30vw, 300px);
-  z-index: 5;
+.search-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  background-color: rgba(22, 23, 29, 0.95);
+  padding: clamp(1.2rem, 2vw, 2.5rem);
+  border-radius: clamp(6px, 0.8vw, 12px);
+  border: clamp(2px, 0.2vw, 3px) solid #683BC2;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
+  max-width: 90vw;
+  width: clamp(280px, 30vw, 450px);
 }
 
-.input {
-  width: 100%;
-  height: 45px;
-  padding-left: 2.5rem;
-  box-shadow: 0 0 0 1.5px #2b2c37, 0 0 25px -17px #000;
-  border: 3px solid black;
-  border-radius: 10px;
-  background-color: #16171d;
-  outline: none;
-  color: #a47ef6;
-  transition: all 0.25s cubic-bezier(0.19, 1, 0.22, 1);
-  cursor: text;
-  z-index: 0;
-}
-
-.input::placeholder { color: #bdbecb; }
-.input:hover {
-  box-shadow: 0 0 0 2.5px #2f303d, 0 0 25px -15px #000;
-}
-.input:active { transform: scale(0.95); }
-.input:focus { box-shadow: 0 0 0 2.5px #2f303d; }
-
-.search-icon {
-  position: absolute;
-  left: 1rem;
-  width: 1rem;
-  height: 1rem;
-  fill: #bdbecb;
-  pointer-events: none;
-  z-index: 11;
-}
-
-/* Dropdown & Overlay */
-.dropdown {
-  position: absolute;
-  right: 35%;
-  transform: translateX(-50%);
-  top: calc(36vh + 45px + 12px); /* Position below .group */
-  width: clamp(200px, 30vw, 600px); /* Same width as .group */
-  max-height: 180px;
-  overflow-y: auto;
-  background-color: #16171d;
-  border: 2px solid black;
-  border-radius: 8px;
-  z-index: 6;
-  animation: fadeInUp 0.3s ease-out forwards;
-  opacity: 0;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
-}
-
-.dropdown-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  border-bottom: 1px solid #333;
-  color: white;
-}
-
-.select-button {
-  padding: 4px 8px;
-  background-color: #683BC2;
-  color: white;
-  border: 1px solid black;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: 0.3s;
-}
-.select-button:hover {
-  background-color: #a47ef6;
-  color: black;
-}
 /* Overlay for blur effect */
 .overlay-screen {
   position: fixed;
@@ -283,7 +410,7 @@ button:focus:not(:focus-visible) {
   left: 0;
   width: 100%;
   height: 100%;
-   background: rgba(0, 0, 0, 0.5); /* darker overlay */
+  background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(6px);
   z-index: 4;
 }
@@ -293,7 +420,6 @@ button:focus:not(:focus-visible) {
   filter: blur(3px);
   pointer-events: none;
   user-select: none;
-  
 }
 
 /* Animations */
@@ -313,267 +439,69 @@ button:focus:not(:focus-visible) {
   }
 }
 
-.team-list {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  align-items: flex-start;
-  position: absolute;
-  top: 15rem;
-  left: 10.5rem;
-  gap: 2.5rem;
-  z-index: 5;
-  width: 550px;
-  max-height: 100vh;
+
+.win-box,
+.lose-box,
+.welcome-box {
+  background-color: #fff;
+  color: black;
+  border-radius: clamp(8px, 1vw, 15px);
+  text-align: center;
+  border: clamp(3px, 0.3vw, 5px) solid #683BC2;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+  max-width: clamp(320px, 80vw, 550px);
+  max-height: 90vh;
   overflow-y: auto;
-  padding-left: 1rem;
-  border: 3px solid #683BC2;
-  border-radius: 12px;
-}
-
-
-.team-hint {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100px;
-}
-
-
-.team-logo {
-  width: 125px;
-  height: 125px;
-  object-fit: contain;
-  filter: drop-shadow(0 0 2px #000);
-  user-select: none;
-  pointer-events: none;
-}
-
-.team-years {
-  font-size: 0.8rem;
-  color: #fff;
-  opacity: 0.8;
-  text-align: center;
-}
-
-/* Hint info blocks */
-.hint-block {
-  background-color: #222;
-  color: white;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  text-align: center;
-  width: 100%; /* full width of .hint-block-container */
-  border: 3px solid #683BC2;
-}
-
-.player-mug {
-  width: 200px;  /* Increased from 160px */
-  height: 250px; /* Increased from 160px */
-  object-fit: cover;
-  border-radius: 12px;
-  border: 4px solid #000; /* Optional: slightly thicker border */
-  top: 42vh;
-}
-
-
-.hint-block-container {
-  position: absolute;
-  top: 15rem;
-  right: 21rem;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;  /* makes children stretch to full container width */
-  gap: 1rem;
-  width: 300px; /* or any fixed width you prefer */
-  z-index: 5;
-  
-}
-
-
-
-.win-modal {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 100;
+  padding: clamp(0.5rem, 1.5vw, 1.5rem);
+
+  /* ✅ New additions */
+  flex-direction: column;
+   top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
 }
 
-.win-box {
-  background-color: #fff;
-  color: black;
-  padding: 2rem;
-  border-radius: 12px;
-  text-align: center;
-  border: 4px solid #683BC2;
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+.lose-box {
+  border-color: #d32f2f;
+}
+
+.lose-box h2 {
+  color: #d32f2f;
+  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
 }
 
 .win-box h2 {
   margin-bottom: 1rem;
-}
-
-.mugshot {
-  width: 120px;
-  height: 160px;
-  object-fit: cover;
-  border: 3px solid black;
-  border-radius: 10%;
-  margin: 1rem 0;
-}
-
-/* Dismiss Button Styles */
-.dismiss-button {
-  position: absolute;
-  top: 2rem;
-  right: 2rem;
-  z-index: 10;
-  padding: 8px 16px;
-  background-color: #683BC2;
-  color: white;
-  border: 2px solid black;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: 0.3s ease;
-}
-
-.dismiss-button:hover {
-  background-color: #a47ef6;
-  color: black;
-}
-
-.new-player-options {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 1rem;
-  position: absolute;
-  top: 30vh;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 5;
-}
-
-.option-button {
-  padding: 0.8rem 1.5rem;
-  font-size: 1rem;
-  border: 3px solid black;
-  border-radius: 8%;
-  background-color: #683BC2;
-  color: white;
-  cursor: pointer;
-  transition: 0.4s;
-}
-
-.option-button:hover {
-  background-color: #a47ef6;
-  color: black;
-}
-
-
-.lose-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 100;
-}
-
-.lose-box {
-  background-color: #fff;
-  color: black;
-  padding: 2rem;
-  border-radius: 12px;
-  text-align: center;
-  border: 4px solid #d32f2f; /* Red border for lose */
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
-}
-
-.lose-box h2 {
-  margin-bottom: 1rem;
-  color: #d32f2f; /* Red text for lose */
-}
-
-.modal-buttons {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  margin-top: 1rem;
-}
-
-.new-game-button {
-  padding: 8px 16px;
-  background-color: #683BC2;
-  color: white;
-  border: 2px solid black;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: 0.3s ease;
-}
-
-.new-game-button:hover {
-  background-color: #a47ef6;
-  color: black;
-}
-
-/* Welcome Modal */
-.welcome-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 100;
+  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
 }
 
 .welcome-box {
-  background-color: #fff;
-  color: black;
-  padding: 2rem;
-  border-radius: 12px;
   text-align: left;
-  border: 4px solid #683BC2;
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
-  max-width: 500px;
-  max-height: 80vh;
-  overflow-y: auto;
-  position: relative;
 }
 
 .welcome-box h2 {
-  margin-bottom: 1rem;
   text-align: center;
   color: #683BC2;
+  margin-bottom: 1rem;
+  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
 }
 
 .welcome-box h3 {
   margin-top: 1.5rem;
   margin-bottom: 0.5rem;
   color: #683BC2;
+  font-size: clamp(1rem, 2vw, 1.3rem);
 }
 
 .rules-content {
-  font-size: 0.9rem;
+  font-size: clamp(0.8rem, 1.4vw, 1rem);
   line-height: 1.4;
 }
 
@@ -589,6 +517,180 @@ button:focus:not(:focus-visible) {
 .rules-content p {
   text-align: center;
   margin-top: 1.5rem;
-  font-size: 1rem;
+  font-size: clamp(0.9rem, 1.6vw, 1.1rem);
 }
 
+.mugshot {
+  width: clamp(80px, 10vw, 140px);
+  height: clamp(100px, 13vw, 180px);
+  object-fit: cover;
+  border: clamp(2px, 0.25vw, 4px) solid black;
+  border-radius: 10%;
+  margin: clamp(0.6rem, 1.2vh, 1.2rem) 0;
+}
+
+/* Button Components */
+.dismiss-button {
+  position: absolute;
+  top: clamp(0.8rem, 1.5vh, 2rem);
+  right: clamp(0.8rem, 1.5vh, 2rem);
+  z-index: 10;
+  padding: clamp(6px, 1vh, 10px) clamp(12px, 1.8vw, 20px);
+  background-color: #683BC2;
+  color: white;
+  border: clamp(1px, 0.15vw, 2px) solid black;
+  border-radius: clamp(6px, 0.8vw, 10px);
+  cursor: pointer;
+  transition: 0.3s ease;
+  font-size: clamp(0.7rem, 1.2vw, 1rem);
+}
+
+.dismiss-button:hover {
+  background-color: #a47ef6;
+  color: black;
+}
+
+.new-player-options {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.8rem, 1.5vh, 1.2rem);
+  margin-top: 1rem;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: clamp(1.2rem, 2.5vw, 2.5rem);
+  border-radius: clamp(8px, 1vw, 15px);
+  border: clamp(2px, 0.25vw, 4px) solid #683BC2;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
+}
+
+.option-button {
+  padding: clamp(0.6rem, 1.4vh, 1rem) clamp(1.2rem, 2.2vw, 2rem);
+  font-size: clamp(0.8rem, 1.4vw, 1.2rem);
+  border: clamp(2px, 0.25vw, 4px) solid black;
+  border-radius: 8%;
+  background-color: #683BC2;
+  color: white;
+  cursor: pointer;
+  transition: 0.4s;
+  min-width: clamp(130px, 20vw, 180px);
+  font-weight: 500;
+}
+
+.option-button:hover {
+  background-color: #a47ef6;
+  color: black;
+}
+
+
+
+.new-game-button {
+  padding: clamp(6px, 1vh, 10px) clamp(12px, 1.8vw, 20px);
+  background-color: #683BC2;
+  color: white;
+  border: clamp(1px, 0.15vw, 2px) solid black;
+  border-radius: clamp(6px, 0.8vw, 10px);
+  cursor: pointer;
+  transition: 0.3s ease;
+  font-size: clamp(0.7rem, 1.2vw, 1rem);
+  font-weight: 500;
+}
+
+.new-game-button:hover {
+  background-color: #a47ef6;
+  color: black;
+}
+
+/* Remove the old top-section since we're using main-content now */
+.top-section {
+  display: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .main-content {
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(1rem, 2vh, 1.8rem);
+  }
+  
+  .team-section,
+  .hint-section {
+    width: 100%;
+    max-width: 400px;
+  }
+  
+  .team-section {
+    order: 1;
+  }
+  
+  .main-game-section {
+    order: 2;
+    max-width: 100%;
+  }
+  
+  .hint-section {
+    order: 3;
+  }
+  
+  .hint-grid {
+    gap: clamp(4px, 1vw, 10px);
+  }
+}
+
+@media (max-width: 480px) {
+  .hint-button {
+    width: clamp(40px, 10vw, 60px);
+    height: clamp(30px, 4vh, 40px);
+    font-size: clamp(0.5rem, 1.5vw, 0.8rem);
+  }
+  
+  .guess-card {
+    padding: clamp(4px, 0.8vh, 8px);
+    font-size: clamp(0.6rem, 0.9vw, 0.8rem);
+  }
+  
+  .player-mug {
+    width: clamp(100px, 18vw, 160px);
+    height: clamp(130px, 22vh, 150px);
+  }
+}
+
+/* Large screen optimizations */
+@media (min-width: 1200px) {
+  #root {
+    max-width: 1800px;
+  }
+  
+  .main-content {
+    gap: clamp(2rem, 3vw, 4rem);
+    padding: 0 clamp(1rem, 3vw, 3rem);
+  }
+}
+
+@media (max-width: 600px) {
+  .buttons-section {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: clamp(0.6rem, 1.2vw, 1rem);
+  }
+
+  .guess-button,
+  .new-player-button {
+    width: clamp(100px, 40vw, 160px);
+    height: clamp(35px, 5vh, 45px);
+    font-size: clamp(0.7rem, 1.2vw, 1rem);
+  }
+}
+
+.guess-button:disabled {
+  background-color: #ccc;        /* Light gray background */
+  color: #666;                   /* Dimmed text */
+  cursor: not-allowed;          /* Cursor shows it's not clickable */
+  opacity: 0.7;                  /* Optional subtle transparency */
+}
