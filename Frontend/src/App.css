@@ -77,7 +77,7 @@
 .teams-logo {
   width: clamp(80px, 10vw, 140px);
   height: auto;
-
+  margin: 0;
   user-select: none;
   pointer-events: none;
 }
@@ -88,8 +88,8 @@
   justify-content: center;
   align-items: flex-start;
   gap: clamp(0.4rem, 1vw, 1rem);
-  width: 30vh;
-  max-height: clamp(200px, 25vh, 350px);
+  max-width: clamp(700px, 50vh, 800px); ;
+  max-height: clamp(200px, 25vh, 500px);
   overflow-y: auto;
   padding: clamp(0.6rem, 1.2vw, 1.2rem);
   border: clamp(2px, 0.2vw, 3px) solid #683BC2;
@@ -312,9 +312,11 @@
 .hint-logo {
   width: clamp(80px, 10vw, 140px);
   height: auto;
+  margin: 0;
   user-select: none;
   pointer-events: none;
 }
+
 
 .hint-block-container {
   display: flex;
@@ -341,10 +343,11 @@
 /* Bottom Section - Hint Buttons */
 .bottom-section {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
- 
   margin-top: auto;
+  gap: clamp(0.6rem, 1vh, 1rem); /* spacing between elements inside */
 }
 
 .hint-grid {
@@ -358,7 +361,7 @@
 }
 
 .hint-button {
-  width: clamp(50px, 8vw, 90px);
+  width: clamp(50px, 8vw, 100px);
   height: clamp(35px, 4.5vh, 50px);
   border: clamp(2px, 0.25vw, 3px) solid black;
   border-radius: 8%;
@@ -465,7 +468,7 @@ button:focus:not(:focus-visible) {
    top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-
+  
 }
 
 .lose-box {
@@ -644,7 +647,7 @@ button:focus:not(:focus-visible) {
 
 @media (max-width: 480px) {
   .hint-button {
-    width: clamp(40px, 10vw, 60px);
+    width: clamp(56px, 10vw, 90px);
     height: clamp(30px, 4vh, 40px);
     font-size: clamp(0.5rem, 1.5vw, 0.8rem);
   }
@@ -693,4 +696,22 @@ button:focus:not(:focus-visible) {
   color: #666;                   /* Dimmed text */
   cursor: not-allowed;          /* Cursor shows it's not clickable */
   opacity: 0.7;                  /* Optional subtle transparency */
+}
+
+.guess-logo {
+  width: clamp(80px, 10vw, 140px);
+  height: auto;
+  margin: 0 auto;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+}
+
+.hint-logo,
+.guess-logo {
+  width: clamp(80px, 10vw, 140px);
+  height: auto;
+  user-select: none;
+  pointer-events: none;
+  display: block;
 }

@@ -5,6 +5,7 @@ import puckLogo from '../src/assets/5320889F-C24B-44FF-BA4F-626C46DCAB12.png';
 import hintLogo from '../src/assets/9E113A00-EBF1-4458-AC2F-58895EF9131F.PNG';
 import teamsLogo from '../src/assets/BC0625CC-DCE0-4267-98EF-88D7D80B6FCA.PNG';
 import questionMark from '../src/assets/question.png';
+import guessLogo from '../src/assets/raw.png';
 
 function App() {
   const [guesses, setGuesses] = useState([]);
@@ -256,6 +257,44 @@ function App() {
               Guess
             </button>
           </div>
+      
+        <div className="hint-grid">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button
+              key={n}
+              className={`hint-button ${!isHintClickable(n) ? 'disabled' : ''}`}
+              onClick={() => handleHintClick(n)}
+              disabled={!isHintClickable(n)}
+            >
+              Hint {n}
+            </button>
+          ))}
+        </div>
+      </div>
+
+              <div className="hint-section">
+          <img src={hintLogo} className="hint-logo" alt="Hint Logo" />
+          <div className="hint-block-container">
+            {revealedHints.includes(2) && <div className="hint-block">{getDraftInfo(correctAnswer)}</div>}
+            {revealedHints.includes(3) && (
+              <div className="hint-block">
+                Jersey #: {correctAnswer?.sweaterNumber || 'N/A'} | Position: {correctAnswer?.position || 'N/A'}
+              </div>
+            )}
+            {revealedHints.includes(4) && <div className="hint-block">{getStats(correctAnswer)}</div>}
+          </div>
+        </div>
+      </div>
+
+                <div className="guess-grid">
+                  <img src={guessLogo} alt="Guess Logo" className="guess-logo" />
+            {guesses.map((guess, index) => (
+              <div key={index} className="guess-card">
+                Guess #{guess.number} – {guess.name} – {guess.correct ? '✅' : '❌'}
+              </div>
+            ))}
+          </div>
+   
 
           {showNewPlayerOptions && (
             <>
@@ -277,44 +316,12 @@ function App() {
             </>
           )}
 
-          <div className="guess-grid">
-            {guesses.map((guess, index) => (
-              <div key={index} className="guess-card">
-                Guess #{guess.number} – {guess.name} – {guess.correct ? '✅' : '❌'}
-              </div>
-            ))}
-          </div>
-        </div>
+
 
         {/* Right Side - Hints */}
-        <div className="hint-section">
-          <img src={hintLogo} className="hint-logo" alt="Hint Logo" />
-          <div className="hint-block-container">
-            {revealedHints.includes(2) && <div className="hint-block">{getDraftInfo(correctAnswer)}</div>}
-            {revealedHints.includes(3) && (
-              <div className="hint-block">
-                Jersey #: {correctAnswer?.sweaterNumber || 'N/A'} | Position: {correctAnswer?.position || 'N/A'}
-              </div>
-            )}
-            {revealedHints.includes(4) && <div className="hint-block">{getStats(correctAnswer)}</div>}
-          </div>
-        </div>
-      </div>
 
-      <div className="bottom-section">
-        <div className="hint-grid">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button
-              key={n}
-              className={`hint-button ${!isHintClickable(n) ? 'disabled' : ''}`}
-              onClick={() => handleHintClick(n)}
-              disabled={!isHintClickable(n)}
-            >
-              Hint {n}
-            </button>
-          ))}
-        </div>
-      </div>
+
+
 
       {hasWon && (
           <>
