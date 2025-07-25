@@ -58,11 +58,12 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-
-  flex: 1;
-  min-height: 0;
-   /* already good, no vertical padding */
+  min-height: auto;
+  flex-grow: 0;
+  flex-shrink: 1;
+  flex-basis: auto;
 }
+
 
 
 /* Left Side - Teams */
@@ -618,7 +619,7 @@ button:focus:not(:focus-visible) {
   .main-content {
     flex-direction: column;
     align-items: center;
-    gap: clamp(1rem, 2vh, 1.8rem);
+    gap: clamp(0.5rem, 1vh, 1rem); /* Reduced gap for mobile */
   }
   
   .team-section,
@@ -638,14 +639,34 @@ button:focus:not(:focus-visible) {
   
   .hint-section {
     order: 3;
+    margin-top: clamp(0.5rem, 1vh, 1rem); /* Move up closer to hint buttons */
+  }
+  
+  /* Move guess-grid directly under hint section on mobile */
+  .guess-grid {
+    order: 4;
+    margin-top: clamp(0.5rem, 1vh, 1rem); /* Move up closer to hint section */
   }
   
   .hint-grid {
     gap: clamp(4px, 1vw, 10px);
+    margin-bottom: clamp(0.5rem, 1vh, 1rem); /* Add small gap before hint section */
   }
 }
 
 @media (max-width: 480px) {
+  .main-content {
+    gap: clamp(0.3rem, 0.8vh, 0.8rem); /* Even smaller gap for very small screens */
+  }
+  
+  .hint-section {
+    margin-top: clamp(0.3rem, 0.6vh, 0.6rem); /* Bring even closer on small screens */
+  }
+  
+  .guess-grid {
+    margin-top: clamp(0.3rem, 0.6vh, 0.6rem); /* Bring even closer on small screens */
+  }
+  
   .hint-button {
     width: clamp(56px, 10vw, 90px);
     height: clamp(30px, 4vh, 40px);
