@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import { usePlayerSearch, useRandomPlayer } from '../../Scripts/useNHLData';
-import puckLogo from '../src/assets/5320889F-C24B-44FF-BA4F-626C46DCAB12.png';
+import puckLogo from '../5320889F-C24B-44FF-BA4F-626C46DCAB12.png';
 import hintLogo from '../src/assets/9E113A00-EBF1-4458-AC2F-58895EF9131F.PNG';
 import teamsLogo from '../src/assets/BC0625CC-DCE0-4267-98EF-88D7D80B6FCA.PNG';
 import questionMark from '../src/assets/question.png';
