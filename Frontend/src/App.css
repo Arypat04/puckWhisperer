@@ -76,7 +76,7 @@
 }
 
 .teams-logo {
-  width: clamp(80px, 10vw, 140px);
+  width: clamp(100px, 10vw, 140px);
   height: auto;
   margin: 0;
   user-select: none;
@@ -89,8 +89,8 @@
   justify-content: center;
   align-items: flex-start;
   gap: clamp(0.4rem, 1vw, 1rem);
-  max-width: clamp(700px, 50vh, 800px); ;
-  max-height: clamp(200px, 25vh, 500px);
+  max-width: clamp(600px, 100vh, 1200px); ;
+  max-height: clamp(200px, 25vh, 700px);
   overflow-y: auto;
   padding: clamp(0.6rem, 1.2vw, 1.2rem);
   border: clamp(2px, 0.2vw, 3px) solid #683BC2;
@@ -247,7 +247,7 @@
   align-items: center;
   gap: clamp(0.8rem, 1.2vh, 1.2rem);
 }
-
+.filter-button,
 .guess-button,
 .new-player-button {
   width: clamp(110px, 14vw, 170px);
@@ -685,13 +685,13 @@ button:focus:not(:focus-visible) {
 }
 
 /* Large screen optimizations */
-@media (min-width: 1200px) {
+@media (min-width: 1500px) {
   #root {
     max-width: 1800px;
   }
   
   .main-content {
-    gap: clamp(2rem, 3vw, 4rem);
+    gap: clamp(2rem, 3vw, 8rem);
     padding: 0 clamp(1rem, 3vw, 3rem);
   }
 }

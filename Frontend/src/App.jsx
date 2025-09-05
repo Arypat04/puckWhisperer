@@ -256,6 +256,9 @@ function App() {
             <button className="guess-button" onClick={() => setShowSearch(true)}>
               Guess
             </button>
+            <button className="filter-button" onClick={() => FileSystemEntry(true) }>
+              Filter
+            </button>
           </div>
       
         <div className="hint-grid">
