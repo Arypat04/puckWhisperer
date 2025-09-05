@@ -1,6 +1,6 @@
 # 🏒 [PuckWhisperer](https://puckwhisperer.onrender.com/)
 
-![PuckWhisperer Logo](./Frontend/src/assets/5320889F-C24B-44FF-BA4F-626C46DCAB12.png)
+![PuckWhisperer Logo](./Frontend/5320889F-C24B-44FF-BA4F-626C46DCAB12.png)
 
 **PuckWhisperer** is a web-based NHL guessing game where you test your hockey knowledge by guessing a mystery player in 3 tries or less. Use hints like draft info, teams played for, stats, and even a silhouette to help you win.  
 
