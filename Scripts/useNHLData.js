@@ -138,6 +138,7 @@ export function useTeams() {
   return { teams, loading, error };
 }
 
+
 // Hook to get random player with filtering support
 export function useRandomPlayer(filters = {}) {
   const [player, setPlayer] = useState(null);

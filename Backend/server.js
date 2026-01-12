@@ -141,7 +141,7 @@ app.get('/api/search', checkDB, async (req, res) => {
 });
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/', (req, res) => {
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
@@ -149,6 +149,8 @@ app.get('/health', (req, res) => {
     port: PORT
   });
 });
+
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {
