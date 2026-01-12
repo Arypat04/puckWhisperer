@@ -35,7 +35,6 @@ export function usePlayers(filters = {}) {
   return { players, loading, error, refetch: fetchPlayers };
 }
 
-
 // Hook to fetch a single player
 export function usePlayer(playerId) {
   const [player, setPlayer] = useState(null);
@@ -139,20 +138,42 @@ export function useTeams() {
   return { teams, loading, error };
 }
 
-
-
-export function useRandomPlayer() {
+// Hook to get random player with filtering support
+export function useRandomPlayer(filters = {}) {
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const hasFetched = useRef(false); // ✅ tracks initial fetch
+  const hasFetched = useRef(false);
+  const filtersRef = useRef();
 
-  const fetchRandomPlayer = async () => {
+  const fetchRandomPlayer = async (customFilters = null) => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/players/random`);
-      const data = await response.json();
-      setPlayer(data);
+      const activeFilters = customFilters || filters;
+      
+      console.log('Frontend filters:', activeFilters);
+      
+      // First fetch filtered players
+      const params = new URLSearchParams(activeFilters);
+      console.log('URL params:', params.toString());
+      
+      const playersResponse = await fetch(`${API_BASE_URL}/players?${params}`);
+      
+      if (!playersResponse.ok) {
+        throw new Error('Failed to fetch filtered players');
+      }
+      
+      const players = await playersResponse.json();
+      
+      if (!players || players.length === 0) {
+        throw new Error('No players match the current filters');
+      }
+      
+      // Pick a random player from the filtered results
+      const randomIndex = Math.floor(Math.random() * players.length);
+      const randomPlayer = players[randomIndex];
+      
+      setPlayer(randomPlayer);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -160,12 +181,70 @@ export function useRandomPlayer() {
     }
   };
 
-  useEffect(() => {
-    if (!hasFetched.current) {
-      hasFetched.current = true;
-      fetchRandomPlayer(); // ✅ runs only once
-    }
-  }, []);
+  // Check if filters have changed
+  const filtersChanged = JSON.stringify(filters) !== JSON.stringify(filtersRef.current);
 
-  return { player, loading, error, refetch: fetchRandomPlayer };
+  useEffect(() => {
+    if (!hasFetched.current || filtersChanged) {
+      hasFetched.current = true;
+      filtersRef.current = filters;
+      fetchRandomPlayer();
+    }
+  }, [JSON.stringify(filters)]);
+
+  return { 
+    player, 
+    loading, 
+    error, 
+    refetch: fetchRandomPlayer 
+  };
+}
+
+// Alternative approach: Separate hook for filtered random players
+export function useFilteredRandomPlayer() {
+  const [player, setPlayer] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchRandomPlayer = async (filters = {}) => {
+    try {
+      setLoading(true);
+      
+      console.log('Frontend filters:', filters);
+      
+      // Fetch filtered players
+      const params = new URLSearchParams(filters);
+      console.log('URL params:', params.toString());
+      
+      const response = await fetch(`${API_BASE_URL}/players?${params}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch filtered players');
+      }
+      
+      const players = await response.json();
+      
+      if (!players || players.length === 0) {
+        throw new Error('No players match the current filters');
+      }
+      
+      // Pick a random player from the filtered results
+      const randomIndex = Math.floor(Math.random() * players.length);
+      const randomPlayer = players[randomIndex];
+      
+      setPlayer(randomPlayer);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Manual fetch only - no automatic initial fetch
+  return { 
+    player, 
+    loading, 
+    error, 
+    fetchRandomPlayer 
+  };
 }

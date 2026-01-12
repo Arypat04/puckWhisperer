@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import './App.css';
-import { usePlayerSearch, useRandomPlayer } from '../../Scripts/useNHLData';
+import { usePlayerSearch, useRandomPlayer, useTeams } from '../../Scripts/useNHLData';
 import puckLogo from '../5320889F-C24B-44FF-BA4F-626C46DCAB12.png';
 import hintLogo from '../src/assets/9E113A00-EBF1-4458-AC2F-58895EF9131F.PNG';
 import teamsLogo from '../src/assets/BC0625CC-DCE0-4267-98EF-88D7D80B6FCA.PNG';
@@ -19,13 +19,28 @@ function App() {
   const [showManualPicker, setShowManualPicker] = useState(false);
   const [showNewPlayerOptions, setShowNewPlayerOptions] = useState(false);
   const [showWelcomePopup, setShowWelcomePopup] = useState(true);
+  const [showFilter, setShowFilter] = useState(false);
+  
+  // Simplified filter states that match the exact player object structure
+  const [filters, setFilters] = useState({});
+  const [tempFilters, setTempFilters] = useState({
+    position: '',
+    sweaterNumber: '',
+    'stats.games': '',
+    'stats.goals': '',
+    'stats.assists': '',
+    'stats.points': '',
+    'draft.year': '',
+    'draft.round': ''
+  });
 
   const { results } = usePlayerSearch(query);
+  const { teams } = useTeams();
   const {
     player: randomPlayer,
     loading: randomLoading,
-    refetch: getNewRandomPlayer,
-  } = useRandomPlayer();
+    refetch,
+  } = useRandomPlayer(filters);
 
   useEffect(() => {
     if (randomPlayer) {
@@ -35,11 +50,48 @@ function App() {
   }, [randomPlayer]);
 
   const handleNewPlayer = async () => {
-    await getNewRandomPlayer();
+    if (refetch) {
+      await refetch();
+    }
     setGuesses([]);
     setHasWon(false);
     setHasLost(false);
     setRevealedHints([]);
+  };
+
+  const handleFilterChange = (key, value) => {
+    setTempFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const applyFilters = () => {
+    // Remove empty values
+    const cleanedFilters = Object.entries(tempFilters).reduce((acc, [key, value]) => {
+      if (value !== '' && value !== null && value !== undefined) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {});
+    
+    setFilters(cleanedFilters);
+    setShowFilter(false);
+  };
+
+  const clearFilters = () => {
+    const emptyFilters = {
+      position: '',
+      sweaterNumber: '',
+      'stats.games': '',
+      'stats.goals': '',
+      'stats.assists': '',
+      'stats.points': '',
+      'draft.year': '',
+      'draft.round': ''
+    };
+    setTempFilters(emptyFilters);
+    setFilters({});
   };
 
   const handleHintClick = (hintNumber) => {
@@ -119,18 +171,23 @@ function App() {
           setQuery('');
         } else if (showNewPlayerOptions) setShowNewPlayerOptions(false);
         else if (showWelcomePopup) setShowWelcomePopup(false);
+        else if (showFilter) setShowFilter(false);
       }
     };
 
-    if (showSearch || showManualPicker || showNewPlayerOptions || showWelcomePopup) {
+    if (showSearch || showManualPicker || showNewPlayerOptions || showWelcomePopup || showFilter) {
       window.addEventListener('keydown', handleKeyDown);
     }
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showSearch, showManualPicker, showNewPlayerOptions, showWelcomePopup]);
+  }, [showSearch, showManualPicker, showNewPlayerOptions, showWelcomePopup, showFilter]);
+
+  const getActiveFilterCount = () => {
+    return Object.keys(filters).length;
+  };
 
   return (
     <>
-      {(showSearch || showManualPicker || showNewPlayerOptions || showWelcomePopup) && (
+      {(showSearch || showManualPicker || showNewPlayerOptions || showWelcomePopup || showFilter) && (
         <div className="overlay-screen"></div>
       )}
 
@@ -138,7 +195,6 @@ function App() {
         <>
         <button className="dismiss-button" onClick={() => setShowWelcomePopup(false)}>✖ Close</button>
         
-
           <div className="welcome-box">
             <h2>Welcome to PuckWhisperer!</h2>
             <div className="rules-content">
@@ -154,7 +210,6 @@ function App() {
               </ul>
             </div>
           </div>
-        
         </>
       )}
 
@@ -192,8 +247,6 @@ function App() {
                 ✖ Close
               </button>
             <div className="search-overlay">
-
-
               <div className="group animate-in">
                 <svg viewBox="0 0 24 24" aria-hidden="true" className="search-icon">
                   <g>
@@ -256,8 +309,11 @@ function App() {
             <button className="guess-button" onClick={() => setShowSearch(true)}>
               Guess
             </button>
-            <button className="filter-button" onClick={() => FileSystemEntry(true) }>
-              Filter
+            <button 
+              className="filter-button" 
+              onClick={() => setShowFilter(true)}
+            >
+              Filter {getActiveFilterCount() > 0 && `(${getActiveFilterCount()})`}
             </button>
           </div>
       
@@ -319,22 +375,141 @@ function App() {
             </>
           )}
 
+          {showFilter && (
+            <>
+              <button className="dismiss-button" onClick={() => setShowFilter(false)}>✖ Close</button>
+              <div className="filter-overlay">
+                <div className="filter-header">
+                  <h3>Filter Players</h3>
+                  <div className="filter-actions">
+                    <button className="clear-filters-btn" onClick={clearFilters}>
+                      Clear All
+                    </button>
+                  </div>
+                </div>
 
+                <div className="filter-content">
+                  <div className="filter-section">
+                    <h4>Basic Info</h4>
+                    <div className="filter-row">
+                      <div className="filter-group">
+                        <label>Position</label>
+                        <select 
+                          value={tempFilters.position} 
+                          onChange={(e) => handleFilterChange('position', e.target.value)}
+                        >
+                          <option value="">Any Position</option>
+                          <option value="C">Center</option>
+                          <option value="LW">Left Wing</option>
+                          <option value="RW">Right Wing</option>
+                          <option value="D">Defense</option>
+                          <option value="G">Goalie</option>
+                        </select>
+                      </div>
+                      <div className="filter-group">
+                        <label>Jersey Number</label>
+                        <input 
+                          type="number"
+                          min="1"
+                          max="99"
+                          value={tempFilters.sweaterNumber}
+                          onChange={(e) => handleFilterChange('sweaterNumber', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="filter-section">
+                    <h4>Career Stats (Minimum)</h4>
+                    <div className="filter-row">
+                      <div className="filter-group">
+                        <label>Games Played</label>
+                        <input 
+                          type="number"
+                          min="0"
+                          value={tempFilters['stats.games']}
+                          onChange={(e) => handleFilterChange('stats.games', e.target.value)}
+                        />
+                      </div>
+                      <div className="filter-group">
+                        <label>Goals</label>
+                        <input 
+                          type="number"
+                          min="0"
+                          value={tempFilters['stats.goals']}
+                          onChange={(e) => handleFilterChange('stats.goals', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="filter-row">
+                      <div className="filter-group">
+                        <label>Assists</label>
+                        <input 
+                          type="number"
+                          min="0"
+                          value={tempFilters['stats.assists']}
+                          onChange={(e) => handleFilterChange('stats.assists', e.target.value)}
+                        />
+                      </div>
+                      <div className="filter-group">
+                        <label>Points</label>
+                        <input 
+                          type="number"
+                          min="0"
+                          value={tempFilters['stats.points']}
+                          onChange={(e) => handleFilterChange('stats.points', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="filter-section">
+                    <h4>Draft Info</h4>
+                    <div className="filter-row">
+                      <div className="filter-group">
+                        <label>Draft Year</label>
+                        <input 
+                          type="number"
+                          min="1963"
+                          max="2024"
+                          value={tempFilters['draft.year']}
+                          onChange={(e) => handleFilterChange('draft.year', e.target.value)}
+                        />
+                      </div>
+                      <div className="filter-group">
+                        <label>Draft Round</label>
+                        <select 
+                          value={tempFilters['draft.round']} 
+                          onChange={(e) => handleFilterChange('draft.round', e.target.value)}
+                        >
+                          <option value="">Any Round</option>
+                          {[1,2,3,4,5,6,7].map(round => (
+                            <option key={round} value={round}>Round {round}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="filter-footer">
+                  <button className="apply-filters-btn" onClick={applyFilters}>
+                    Apply Filters
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
 
         {/* Right Side - Hints */}
-
-
-
 
       {hasWon && (
           <>
           <button onClick={() => setHasWon(false)} className="dismiss-button">✖ Close</button>
           <div className="win-box">
-            
             <h2>You guessed correctly!</h2>
             <img src={correctAnswer?.silhouette} alt="Player mugshot" className="mugshot" />
             <p>{correctAnswer?.name}</p>
-            
           </div>
           </>
       )}
@@ -347,7 +522,6 @@ function App() {
             <img src={correctAnswer?.silhouette} alt="Player mugshot" className="mugshot" />
             <p>The answer was: <strong>{correctAnswer?.name}</strong></p>
             <div className="modal-buttons">
-              
               <button onClick={async () => {
                 await handleNewPlayer();
                 setHasLost(false);
