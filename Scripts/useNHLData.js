@@ -3,71 +3,6 @@ import { useState, useEffect, useRef } from 'react';
 
 const API_BASE_URL = 'https://puckwhisperer-backend.onrender.com/api';
 
-// Hook to fetch all players
-export function usePlayers(filters = {}) {
-  const [players, setPlayers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const fetchPlayers = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams(filters);
-      const response = await fetch(`${API_BASE_URL}/players?${params}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch players');
-      }
-
-      const data = await response.json();
-      setPlayers(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchPlayers();
-  }, [JSON.stringify(filters)]);
-
-  return { players, loading, error, refetch: fetchPlayers };
-}
-
-// Hook to fetch a single player
-export function usePlayer(playerId) {
-  const [player, setPlayer] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (!playerId) return;
-
-    async function fetchPlayer() {
-      try {
-        setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/players/${playerId}`);
-        
-        if (!response.ok) {
-          throw new Error('Player not found');
-        }
-        
-        const data = await response.json();
-        setPlayer(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchPlayer();
-  }, [playerId]);
-
-  return { player, loading, error };
-}
-
 // Hook to search players
 export function usePlayerSearch(query) {
   const [results, setResults] = useState([]);
@@ -86,11 +21,11 @@ export function usePlayerSearch(query) {
         const response = await fetch(
           `${API_BASE_URL}/search?q=${encodeURIComponent(query)}`
         );
-        
+
         if (!response.ok) {
           throw new Error('Search failed');
         }
-        
+
         const data = await response.json();
         setResults(data);
       } catch (err) {
@@ -107,7 +42,7 @@ export function usePlayerSearch(query) {
   return { results, loading, error };
 }
 
-// Hook to fetch teams
+// Hook to fetch the list of teams (for the filter dropdown)
 export function useTeams() {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -118,11 +53,11 @@ export function useTeams() {
       try {
         setLoading(true);
         const response = await fetch(`${API_BASE_URL}/teams`);
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch teams');
         }
-        
+
         const data = await response.json();
         setTeams(data);
       } catch (err) {
@@ -138,8 +73,8 @@ export function useTeams() {
   return { teams, loading, error };
 }
 
-
-// Hook to get random player with filtering support
+// Hook to get a random player, optionally filtered (position, sweaterNumber,
+// stats.games/goals/assists/points minimums, draft.year, draft.round)
 export function useRandomPlayer(filters = {}) {
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -150,31 +85,19 @@ export function useRandomPlayer(filters = {}) {
   const fetchRandomPlayer = async (customFilters = null) => {
     try {
       setLoading(true);
+      setError(null);
       const activeFilters = customFilters || filters;
-      
-      console.log('Frontend filters:', activeFilters);
-      
-      // First fetch filtered players
       const params = new URLSearchParams(activeFilters);
-      console.log('URL params:', params.toString());
-      
-      const playersResponse = await fetch(`${API_BASE_URL}/players?${params}`);
-      
-      if (!playersResponse.ok) {
-        throw new Error('Failed to fetch filtered players');
+
+      const response = await fetch(`${API_BASE_URL}/players/random?${params}`);
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to fetch a random player');
       }
-      
-      const players = await playersResponse.json();
-      
-      if (!players || players.length === 0) {
-        throw new Error('No players match the current filters');
-      }
-      
-      // Pick a random player from the filtered results
-      const randomIndex = Math.floor(Math.random() * players.length);
-      const randomPlayer = players[randomIndex];
-      
-      setPlayer(randomPlayer);
+
+      const data = await response.json();
+      setPlayer(data);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -193,59 +116,10 @@ export function useRandomPlayer(filters = {}) {
     }
   }, [JSON.stringify(filters)]);
 
-  return { 
-    player, 
-    loading, 
-    error, 
-    refetch: fetchRandomPlayer 
-  };
-}
-
-// Alternative approach: Separate hook for filtered random players
-export function useFilteredRandomPlayer() {
-  const [player, setPlayer] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const fetchRandomPlayer = async (filters = {}) => {
-    try {
-      setLoading(true);
-      
-      console.log('Frontend filters:', filters);
-      
-      // Fetch filtered players
-      const params = new URLSearchParams(filters);
-      console.log('URL params:', params.toString());
-      
-      const response = await fetch(`${API_BASE_URL}/players?${params}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch filtered players');
-      }
-      
-      const players = await response.json();
-      
-      if (!players || players.length === 0) {
-        throw new Error('No players match the current filters');
-      }
-      
-      // Pick a random player from the filtered results
-      const randomIndex = Math.floor(Math.random() * players.length);
-      const randomPlayer = players[randomIndex];
-      
-      setPlayer(randomPlayer);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Manual fetch only - no automatic initial fetch
-  return { 
-    player, 
-    loading, 
-    error, 
-    fetchRandomPlayer 
+  return {
+    player,
+    loading,
+    error,
+    refetch: fetchRandomPlayer
   };
 }

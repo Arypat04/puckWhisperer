@@ -46,7 +46,7 @@ app.use(express.json());
 // Middleware to check DB connection
 const checkDB = (req, res, next) => {
   if (!db || !collection) {
-    return res.status(503).json({ 
+    return res.status(503).json({
       error: 'Database not available',
       message: 'MongoDB connection not established'
     });
@@ -54,20 +54,47 @@ const checkDB = (req, res, next) => {
   next();
 };
 
+// Minimum-value filters (Career Stats section on the frontend)
+const MINIMUM_STAT_FIELDS = ['stats.games', 'stats.goals', 'stats.assists', 'stats.points'];
+// Exact-match numeric filters
+const EXACT_NUMERIC_FIELDS = ['sweaterNumber', 'draft.year', 'draft.round'];
+
+// Builds a Mongo filter from the query params the frontend's filter panel
+// and search/random endpoints send.
+function buildPlayerQuery(query) {
+  const filter = {};
+
+  if (query.position) filter.position = query.position;
+  if (query.team) filter['teams.teamAbbrev'] = query.team;
+
+  for (const field of MINIMUM_STAT_FIELDS) {
+    const raw = query[field];
+    if (raw === undefined || raw === '') continue;
+    const num = Number(raw);
+    if (!Number.isNaN(num)) filter[field] = { $gte: num };
+  }
+
+  for (const field of EXACT_NUMERIC_FIELDS) {
+    const raw = query[field];
+    if (raw === undefined || raw === '') continue;
+    const num = Number(raw);
+    if (!Number.isNaN(num)) filter[field] = num;
+  }
+
+  return filter;
+}
+
 // Routes
 app.get('/api/players', checkDB, async (req, res) => {
   try {
-    const { team, position, limit = 100 } = req.query;
-    
-    let query = {};
-    if (team) query.team = team;
-    if (position) query.position = position;
-    
+    const { limit = 100 } = req.query;
+    const query = buildPlayerQuery(req.query);
+
     const players = await collection
       .find(query)
       .limit(parseInt(limit))
       .toArray();
-    
+
     res.json(players);
   } catch (error) {
     console.error('Error fetching players:', error);
@@ -76,11 +103,18 @@ app.get('/api/players', checkDB, async (req, res) => {
 });
 
 app.get('/api/players/random', checkDB, async (req, res) => {
-
   try {
-    const count = await collection.countDocuments();
-    const randomIndex = Math.floor(Math.random() * count);
-    const randomPlayer = await collection.find().limit(1).skip(randomIndex).next();
+    const query = buildPlayerQuery(req.query);
+
+    const [randomPlayer] = await collection.aggregate([
+      { $match: query },
+      { $sample: { size: 1 } }
+    ]).toArray();
+
+    if (!randomPlayer) {
+      return res.status(404).json({ error: 'No players match the current filters' });
+    }
+
     res.json(randomPlayer);
   } catch (error) {
     console.error('Error getting random player:', error);
@@ -88,8 +122,22 @@ app.get('/api/players/random', checkDB, async (req, res) => {
   }
 });
 
+app.get('/api/teams', checkDB, async (req, res) => {
+  try {
+    const teams = await collection.aggregate([
+      { $unwind: '$teams' },
+      { $match: { 'teams.teamAbbrev': { $ne: '' } } },
+      { $group: { _id: '$teams.teamAbbrev', teamName: { $first: '$teams.teamName' } } },
+      { $project: { _id: 0, teamAbbrev: '$_id', teamName: 1 } },
+      { $sort: { teamName: 1 } }
+    ]).toArray();
 
-
+    res.json(teams);
+  } catch (error) {
+    console.error('Error fetching teams:', error);
+    res.status(500).json({ error: 'Failed to fetch teams' });
+  }
+});
 
 app.get('/api/players/:id', checkDB, async (req, res) => {
   try {
@@ -105,16 +153,6 @@ app.get('/api/players/:id', checkDB, async (req, res) => {
   } catch (error) {
     console.error('Error fetching player:', error);
     res.status(500).json({ error: 'Failed to fetch player' });
-  }
-});
-
-app.get('/api/teams', checkDB, async (req, res) => {
-  try {
-    const teams = await collection.distinct('team');
-    res.json(teams);
-  } catch (error) {
-    console.error('Error fetching teams:', error);
-    res.status(500).json({ error: 'Failed to fetch teams' });
   }
 });
 

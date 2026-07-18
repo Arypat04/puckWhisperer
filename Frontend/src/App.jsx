@@ -25,6 +25,7 @@ function App() {
   const [filters, setFilters] = useState({});
   const [tempFilters, setTempFilters] = useState({
     position: '',
+    team: '',
     sweaterNumber: '',
     'stats.games': '',
     'stats.goals': '',
@@ -82,6 +83,7 @@ function App() {
   const clearFilters = () => {
     const emptyFilters = {
       position: '',
+      team: '',
       sweaterNumber: '',
       'stats.games': '',
       'stats.goals': '',
@@ -408,13 +410,27 @@ function App() {
                       </div>
                       <div className="filter-group">
                         <label>Jersey Number</label>
-                        <input 
+                        <input
                           type="number"
                           min="1"
                           max="99"
                           value={tempFilters.sweaterNumber}
                           onChange={(e) => handleFilterChange('sweaterNumber', e.target.value)}
                         />
+                      </div>
+                    </div>
+                    <div className="filter-row">
+                      <div className="filter-group">
+                        <label>Team</label>
+                        <select
+                          value={tempFilters.team}
+                          onChange={(e) => handleFilterChange('team', e.target.value)}
+                        >
+                          <option value="">Any Team</option>
+                          {teams.map((t) => (
+                            <option key={t.teamAbbrev} value={t.teamAbbrev}>{t.teamName}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
                   </div>
