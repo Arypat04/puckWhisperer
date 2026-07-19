@@ -140,6 +140,19 @@ export function getDraftTeamInfo(draftData) {
   };
 }
 
+// Pulls major end-of-season trophies (Hart, Norris, Vezina, Calder, Art
+// Ross, Conn Smythe, Rocket Richard, Ted Lindsay, Stanley Cup, etc.) from
+// the NHL API's `awards` field. Note: this does NOT include All-Star Game
+// selections - the NHL API doesn't expose that data anywhere we can reach.
+export function extractTrophies(awardsData) {
+  if (!Array.isArray(awardsData)) return [];
+
+  return awardsData.map(award => ({
+    name: award.trophy?.default || 'Unknown Trophy',
+    seasons: (award.seasons || []).map(s => s.seasonId).filter(Boolean)
+  }));
+}
+
 // Collapses a player's season-by-season history into per-team tenures,
 // merging consecutive seasons with the same team and flagging the latest
 // tenure as active if it covers this season or last.

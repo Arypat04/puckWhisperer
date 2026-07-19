@@ -6,7 +6,8 @@ import {
   fetchActiveTeams,
   buildTeamMaps,
   getDraftTeamInfo,
-  extractTeams
+  extractTeams,
+  extractTrophies
 } from './nhlShared.js';
 
 // How many player-landing requests to have in flight at once. Empirically
@@ -120,6 +121,18 @@ class NHLUpdater {
       }
     }
 
+    const oldTrophyNames = (oldPlayer.trophies || []).map(t => t.name).sort().join(',');
+    const newTrophyNames = (newPlayer.trophies || []).map(t => t.name).sort().join(',');
+    if (oldTrophyNames !== newTrophyNames) {
+      changes.push(`Trophies: [${oldTrophyNames || 'none'}] → [${newTrophyNames || 'none'}]`);
+    }
+    if (!!oldPlayer.hallOfFame !== !!newPlayer.hallOfFame) {
+      changes.push(`Hall of Fame: ${!!oldPlayer.hallOfFame} → ${!!newPlayer.hallOfFame}`);
+    }
+    if (!!oldPlayer.topAllTime !== !!newPlayer.topAllTime) {
+      changes.push(`Top 100 All-Time: ${!!oldPlayer.topAllTime} → ${!!newPlayer.topAllTime}`);
+    }
+
     return changes;
   }
 
@@ -159,6 +172,7 @@ class NHLUpdater {
           const silhouette = data.headshot || `https://assets.nhle.com/mugs/nhl/20232024/${oldPlayer.id}.png`;
           const draftInfo = getDraftTeamInfo(data.draftDetails);
           const teamArray = extractTeams(seasons, teamMapById, teamMapByName);
+          const trophies = extractTrophies(data.awards);
 
           let isActive = false;
           const latestTeam = teamArray[teamArray.length - 1];
@@ -173,6 +187,9 @@ class NHLUpdater {
             draft: draftInfo,
             teams: teamArray,
             isActive,
+            trophies,
+            hallOfFame: !!data.inHHOF,
+            topAllTime: !!data.inTop100AllTime,
             stats: position === 'G' ? {
               games: career.gamesPlayed || 0,
               wins: career.wins || 0,

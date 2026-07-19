@@ -58,14 +58,47 @@ const checkDB = (req, res, next) => {
 const MINIMUM_STAT_FIELDS = ['stats.games', 'stats.goals', 'stats.assists', 'stats.points'];
 // Exact-match numeric filters
 const EXACT_NUMERIC_FIELDS = ['sweaterNumber', 'draft.year', 'draft.round'];
+// Game Mode presets: boolean fields, sent as the string "true"/"false".
+// Omitted entirely means "don't filter on this" (e.g. isActive omitted =
+// include both active and retired players).
+const BOOLEAN_FIELDS = { isActive: 'isActive', hallOfFame: 'hallOfFame', topAllTime: 'topAllTime' };
+
+// Only accept plain strings for filter values that flow into the query
+// object - defends against operator injection (e.g. a client sending a
+// nested object like {$ne: null} for a field) even though Express 5's
+// default "simple" query parser doesn't produce nested objects from query
+// strings today. Cheap insurance against that changing later.
+function asPlainString(value) {
+  return typeof value === 'string' ? value : undefined;
+}
+
+// Escapes regex metacharacters so user search input is treated as a literal
+// substring match instead of an arbitrary regex - prevents ReDoS (e.g. a
+// crafted pattern like `(a+)+$`) and surprising wildcard behavior.
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 // Builds a Mongo filter from the query params the frontend's filter panel
 // and search/random endpoints send.
 function buildPlayerQuery(query) {
   const filter = {};
 
-  if (query.position) filter.position = query.position;
-  if (query.team) filter['teams.teamAbbrev'] = query.team;
+  const position = asPlainString(query.position);
+  if (position) filter.position = position;
+
+  const team = asPlainString(query.team);
+  if (team) filter['teams.teamAbbrev'] = team;
+
+  for (const [param, field] of Object.entries(BOOLEAN_FIELDS)) {
+    const raw = query[param];
+    if (raw === undefined || raw === '') continue;
+    filter[field] = raw === 'true';
+  }
+
+  if (query.hasAwards === 'true') {
+    filter['trophies.0'] = { $exists: true };
+  }
 
   for (const field of MINIMUM_STAT_FIELDS) {
     const raw = query[field];
@@ -158,16 +191,11 @@ app.get('/api/players/:id', checkDB, async (req, res) => {
 
 app.get('/api/search', checkDB, async (req, res) => {
   try {
-    const { q } = req.query;
+    const q = asPlainString(req.query.q);
     if (!q) return res.json([]);
-    
+
     const players = await collection
-      .find({
-        $or: [
-          { name: { $regex: q, $options: 'i' } },
-          { team: { $regex: q, $options: 'i' } }
-        ]
-      })
+      .find({ name: { $regex: escapeRegex(q), $options: 'i' } })
       .limit(20)
       .toArray();
     

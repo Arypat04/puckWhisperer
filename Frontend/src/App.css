@@ -1,84 +1,148 @@
-/* Root container */
-#root {
-  max-width: 1600px;
-  margin: 0 auto;
+/* ==========================================================================
+   Design tokens
+   ========================================================================== */
+:root {
+  --bg-base: #0b0b10;
+  --bg-glow-1: radial-gradient(circle at 15% 0%, rgba(104, 59, 194, 0.16), transparent 45%);
+  --bg-glow-2: radial-gradient(circle at 85% 100%, rgba(104, 59, 194, 0.12), transparent 45%);
 
-  text-align: center;
+  --surface: #16161d;
+  --surface-raised: #1d1e27;
+  --surface-sunken: #101015;
+
+  --border: #2a2b36;
+  --border-strong: #3a3b4a;
+
+  --accent: #683bc2;
+  --accent-hover: #7c4dff;
+  --accent-soft: rgba(104, 59, 194, 0.16);
+  --accent-glow: rgba(104, 59, 194, 0.35);
+
+  --text-primary: #f5f1e8;
+  --text-secondary: #b3b3c0;
+  --text-muted: #7a7a88;
+
+  --success: #22c55e;
+  --success-soft: rgba(34, 197, 94, 0.14);
+  --danger: #ef4444;
+  --danger-soft: rgba(239, 68, 68, 0.14);
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --shadow-glow: 0 0 0 1px var(--border), 0 12px 32px rgba(0, 0, 0, 0.45);
+
+  --space-1: clamp(4px, 0.5vh, 6px);
+  --space-2: clamp(8px, 1vh, 12px);
+  --space-3: clamp(12px, 1.6vh, 18px);
+  --space-4: clamp(16px, 2.2vh, 24px);
+  --space-5: clamp(24px, 3vh, 36px);
+}
+
+/* ==========================================================================
+   Root layout
+   ========================================================================== */
+#root {
+  max-width: 1440px;
+  margin: 0 auto;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: clamp(0.8rem, 1.5vh, 1.5rem);
+  gap: var(--space-3);
+  padding: var(--space-3) clamp(0.8rem, 2vw, 2rem) var(--space-5);
+  background:
+    var(--bg-glow-1),
+    var(--bg-glow-2),
+    var(--bg-base);
 }
 
-/* Logo & Animation */
-.logo {
-  height: 5em;
- 
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+* {
+  box-sizing: border-box;
 }
 
-@keyframes logo-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card { padding: 2em; }
-.read-the-docs { color: #888; }
-
-/* Header Section - Main Logo */
+/* ==========================================================================
+   Header
+   ========================================================================== */
 .header-section {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
+  padding-top: var(--space-2);
 }
 
-
 .puck-logo {
-  width: clamp(100px, 15vw, 320px);
+  width: clamp(110px, 14vw, 260px);
   height: auto;
   user-select: none;
   pointer-events: none;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.5));
 }
 
-/* Main Content Layout - Side by side */
-.main-content {
+.help-button {
+  position: absolute;
+  top: var(--space-2);
+  right: 0;
+  width: clamp(30px, 3.4vw, 38px);
+  height: clamp(30px, 3.4vw, 38px);
+  padding: 0;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  min-height: auto;
-  flex-grow: 0;
-  flex-shrink: 1;
-  flex-basis: auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: clamp(1rem, 1.6vw, 1.2rem);
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
+.help-button:hover {
+  border-color: var(--accent);
+  color: var(--accent-hover);
+}
 
+/* ==========================================================================
+   Panels (shared card surface for the three columns)
+   ========================================================================== */
+.panel {
+  background: linear-gradient(180deg, var(--surface-raised), var(--surface));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
 
-/* Left Side - Teams */
+/* ==========================================================================
+   Main layout - grid of three panels
+   ========================================================================== */
+.main-content {
+  display: grid;
+  grid-template-columns: minmax(220px, 340px) minmax(300px, 480px) minmax(220px, 340px);
+  justify-content: center;
+  align-items: start;
+  gap: var(--space-4);
+}
+
+/* ---- Teams panel ---- */
 .team-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: clamp(150px, 22vw, 280px);
-  flex-shrink: 0;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-3);
 }
 
-.teams-logo {
-  width: clamp(100px, 10vw, 140px);
+.teams-logo,
+.hint-logo,
+.guess-logo {
+  width: clamp(90px, 9vw, 130px);
   height: auto;
-  margin: 0;
   user-select: none;
   pointer-events: none;
 }
@@ -87,74 +151,215 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  align-items: flex-start;
-  gap: clamp(0.4rem, 1vw, 1rem);
-  max-width: clamp(600px, 100vh, 1200px); ;
-  max-height: clamp(200px, 25vh, 700px);
+  align-content: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: clamp(140px, 20vh, 260px);
+  max-height: clamp(220px, 32vh, 520px);
   overflow-y: auto;
-  padding: clamp(0.6rem, 1.2vw, 1.2rem);
-  border: clamp(2px, 0.2vw, 3px) solid #683BC2;
-  border-radius: clamp(6px, 0.8vw, 12px);
-  background-color: rgba(36, 36, 36, 0.9);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
 }
 
 .team-hint {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: clamp(35px, 5vw, 65px);
+  width: clamp(38px, 5vw, 58px);
 }
 
 .team-logo {
-  width: clamp(30px, 4.5vw, 60px);
-  height: clamp(30px, 4.5vw, 60px);
+  width: clamp(32px, 4.2vw, 52px);
+  height: clamp(32px, 4.2vw, 52px);
   object-fit: contain;
-  filter: drop-shadow(0 0 2px #000);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
   user-select: none;
   pointer-events: none;
 }
 
 .team-years {
-  font-size: clamp(0.5rem, 0.8vw, 0.8rem);
-  color: #fff;
-  opacity: 0.8;
+  font-size: clamp(0.55rem, 0.75vw, 0.72rem);
+  color: var(--text-secondary);
   text-align: center;
-  margin-top: clamp(2px, 0.3vh, 4px);
+  margin-top: var(--space-1);
 }
 
-/* Center - Main Game */
+.team-empty {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: var(--space-4) var(--space-2);
+}
+
+/* ---- Center game panel ---- */
 .main-game-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(0.5rem, 1vh, 1.2rem);
-  flex: 1;
-  justify-content: flex-start;
-  max-width: clamp(280px, 35vw, 450px);
-  margin: 0 auto;
-  padding-top: clamp(0rem, 0.2vh, 0.3rem); /* Less padding */
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-3);
 }
 
-
-/* Player Image */
 .player-mug {
-  width: clamp(120px, 16vw, 220px);
-  height: clamp(160px, 20vh, 280px);
-  border: clamp(2px, 0.25vw, 4px) solid black;
-  border-radius: 10%;
+  width: clamp(140px, 15vw, 210px);
+  height: clamp(180px, 19vh, 260px);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius-md);
   object-fit: cover;
+  background: var(--surface-sunken);
   user-select: none;
   pointer-events: none;
+  box-shadow: var(--shadow-sm);
 }
 
-/* Search Section */
-.search-section {
+/* Buttons */
+.buttons-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(0.6rem, 1vh, 1rem);
+  gap: var(--space-2);
   width: 100%;
-  position: relative;
+}
+
+.random-error {
+  color: var(--danger);
+  font-size: clamp(0.72rem, 1vw, 0.85rem);
+  text-align: center;
+  margin: 0;
+}
+
+.btn {
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+}
+
+.btn-primary {
+  width: clamp(180px, 20vw, 260px);
+  padding: clamp(10px, 1.6vh, 14px) var(--space-3);
+  font-size: clamp(0.9rem, 1.3vw, 1.05rem);
+  background: var(--accent);
+  color: var(--text-primary);
+  box-shadow: 0 6px 18px var(--accent-glow);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.secondary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.btn-secondary {
+  flex: 1;
+  min-width: 96px;
+  padding: clamp(8px, 1.3vh, 11px) var(--space-2);
+  font-size: clamp(0.78rem, 1.1vw, 0.92rem);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent-hover);
+}
+
+.btn-ghost {
+  padding: clamp(4px, 0.8vh, 6px) var(--space-2);
+  font-size: clamp(0.72rem, 1vw, 0.82rem);
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 500;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  color: var(--text-secondary);
+}
+
+/* Hint trigger buttons */
+.hint-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  justify-content: center;
+  width: 100%;
+}
+
+.hint-button {
+  flex: 1;
+  min-width: clamp(48px, 8vw, 72px);
+  padding: clamp(7px, 1.2vh, 10px) var(--space-1);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: clamp(0.68rem, 1vw, 0.82rem);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.hint-button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent-hover);
+}
+
+.hint-button.revealed {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.hint-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Search box (shared by Guess + Custom Player) */
+.search-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  background: var(--surface-raised);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-md);
+  max-width: 90vw;
+  width: clamp(280px, 32vw, 460px);
+}
+
+.search-overlay h3 {
+  margin: 0 0 var(--space-3);
+  color: var(--text-primary);
+  font-size: clamp(1rem, 1.6vw, 1.2rem);
+  text-align: center;
 }
 
 .group {
@@ -167,657 +372,477 @@
 
 .input {
   width: 100%;
-  height: clamp(40px, 4.5vh, 50px);
-  padding-left: clamp(2.2rem, 3.5vw, 3rem);
-  box-shadow: 0 0 0 1.5px #2b2c37, 0 0 25px -17px #000;
-  border: clamp(2px, 0.2vw, 3px) solid black;
-  border-radius: clamp(6px, 0.8vw, 10px);
-  background-color: #16171d;
+  height: clamp(42px, 4.5vh, 50px);
+  padding-left: clamp(2.4rem, 3.5vw, 3rem);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-sunken);
   outline: none;
-  color: #a47ef6;
-  transition: all 0.25s cubic-bezier(0.19, 1, 0.22, 1);
-  cursor: text;
-  font-size: clamp(0.8rem, 1.2vw, 1.1rem);
+  color: var(--text-primary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-size: clamp(0.85rem, 1.2vw, 1.05rem);
 }
 
-.input::placeholder { color: #bdbecb; }
-.input:hover {
-  box-shadow: 0 0 0 2.5px #2f303d, 0 0 25px -15px #000;
+.input::placeholder {
+  color: var(--text-muted);
 }
-.input:active { transform: scale(0.95); }
-.input:focus { box-shadow: 0 0 0 2.5px #2f303d; }
+.input:hover {
+  border-color: var(--border-strong);
+}
+.input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
 
 .search-icon {
   position: absolute;
-  left: clamp(0.8rem, 1.5vw, 1.2rem);
+  left: clamp(0.9rem, 1.5vw, 1.2rem);
   width: clamp(0.9rem, 1.3vw, 1.2rem);
   height: clamp(0.9rem, 1.3vw, 1.2rem);
-  fill: #bdbecb;
+  fill: var(--text-muted);
   pointer-events: none;
-  z-index: 11;
 }
 
-/* Dropdown positioned relative to search section */
 .dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  margin-top: clamp(8px, 1vh, 12px);
-  max-height: clamp(120px, 15vh, 180px);
+  margin-top: var(--space-2);
+  max-height: clamp(140px, 18vh, 220px);
   overflow-y: auto;
-  background-color: #16171d;
-  border: clamp(1px, 0.15vw, 2px) solid black;
-  border-radius: clamp(4px, 0.6vw, 8px);
-  z-index: 6;
-  animation: fadeInUp 0.3s ease-out forwards;
-  opacity: 0;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
 }
 
 .dropdown-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: clamp(6px, 1vh, 10px) clamp(10px, 1.5vw, 15px);
-  border-bottom: 1px solid #333;
-  color: white;
-  font-size: clamp(0.7rem, 1vw, 0.9rem);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: clamp(0.75rem, 1vw, 0.9rem);
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-empty {
+  padding: var(--space-3);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-align: center;
 }
 
 .select-button {
-  padding: clamp(3px, 0.6vh, 6px) clamp(6px, 1.2vw, 10px);
-  background-color: #683BC2;
+  padding: clamp(4px, 0.7vh, 7px) clamp(10px, 1.4vw, 14px);
+  background-color: var(--accent);
   color: white;
-  border: 1px solid black;
-  border-radius: clamp(4px, 0.6vw, 6px);
+  border: none;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: 0.3s;
-  font-size: clamp(0.6rem, 1vw, 0.8rem);
+  transition: background-color 0.2s ease;
+  font-size: clamp(0.65rem, 0.95vw, 0.8rem);
+  font-weight: 600;
 }
 .select-button:hover {
-  background-color: #a47ef6;
-  color: black;
+  background-color: var(--accent-hover);
 }
 
-/* Buttons Section */
-.buttons-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: clamp(0.8rem, 1.2vh, 1.2rem);
-}
-.filter-button,
-.guess-button,
-.new-player-button {
-  width: clamp(110px, 14vw, 170px);
-  height: clamp(8px, 4.5vh, 40px);
-  border: clamp(2px, 0.25vw, 3px) solid black;
-  border-radius: 8%;
-  background-color: #683BC2;
-  color: white;
-  cursor: pointer;
-  transition: 0.4s;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  white-space: nowrap;
-  text-align: center;
-  font-size: clamp(0.8rem, 1.2vw, 1.1rem);
-  font-weight: 500;
-}
-
-.guess-button:hover,
-.new-player-button:hover {
-  background-color: #a47ef6;
-  color: black;
-}
-
-/* Guess Grid */
-.guess-grid {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(6px, 1vh, 10px);
-  width: 100%;
-  align-items: center;
-}
-
-.guess-card {
-  border: #683BC2 solid clamp(2px, 0.2vw, 3px);
-  border-radius: clamp(6px, 0.8vw, 10px);
-  padding: clamp(5px, 1vh, 10px);
-  background-color: #242424;
-  white-space: normal;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  font-weight: bold;
-  font-size: clamp(0.7rem, 1.1vw, 1rem);
-  color: white;
-  width: 100%;
-  text-align: center;
-  min-height: clamp(8px, 3.5vh, 20px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Right Side - Hints */
+/* ---- Hints panel (right column) ---- */
 .hint-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: clamp(150px, 22vw, 280px);
-  flex-shrink: 0;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-3);
 }
-
-.hint-logo {
-  width: clamp(80px, 10vw, 140px);
-  height: auto;
-  margin: 0;
-  user-select: none;
-  pointer-events: none;
-}
-
 
 .hint-block-container {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  gap: clamp(0.4rem, 0.6vh, 0.8rem);
+  gap: var(--space-2);
   width: 100%;
-  max-height: clamp(200px, 25vh, 350px);
+  max-height: clamp(220px, 30vh, 400px);
   overflow-y: auto;
 }
 
 .hint-block {
-  background-color: #222;
-  color: white;
-  padding: clamp(6px, 1vh, 12px) clamp(8px, 1.2vw, 15px);
-  border-radius: clamp(5px, 0.6vw, 8px);
-  font-size: clamp(0.65rem, 0.9vw, 0.9rem);
-  text-align: center;
-  border: clamp(2px, 0.2vw, 3px) solid #683BC2;
-  word-wrap: break-word;
-  line-height: 1.3;
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: clamp(0.7rem, 0.95vw, 0.88rem);
+  text-align: left;
+  border: 1px solid var(--border);
+  line-height: 1.45;
 }
 
-/* Bottom Section - Hint Buttons */
-.bottom-section {
+.trophy-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.trophy-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px var(--space-2);
+  background: var(--surface-sunken);
+  border: 1px solid #7a5a1e;
+  border-radius: var(--radius-sm);
+  font-size: clamp(0.62rem, 0.85vw, 0.75rem);
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.trophy-icon {
+  width: 26px;
+  height: 34px;
+  flex-shrink: 0;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 4px;
+  background: #0a0a0d;
+  color: #e0b23c;
+}
+
+svg.trophy-icon {
+  padding: 4px;
+  width: 16px;
+  height: 16px;
+}
+
+.trophy-name {
+  overflow-wrap: break-word;
+}
+
+.trophy-count {
+  font-weight: 700;
+  color: #e0b23c;
+}
+
+.hint-block-empty {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-align: center;
+  padding: var(--space-3) 0;
+}
+
+/* ---- Guess history strip ---- */
+.guess-grid {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  margin-top: auto;
-  gap: clamp(0.6rem, 1vh, 1rem); /* spacing between elements inside */
+  gap: var(--space-2);
+  width: 100%;
+  max-width: clamp(300px, 35vw, 480px);
+  margin: 0 auto;
 }
 
-.hint-grid {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: clamp(4px, 1vw, 10px);
-  justify-content: center;
-  align-items: center;
-  max-width: clamp(300px, 60vw, 700px);
-}
-
-.hint-button {
-  width: clamp(50px, 8vw, 100px);
-  height: clamp(35px, 4.5vh, 50px);
-  border: clamp(2px, 0.25vw, 3px) solid black;
-  border-radius: 8%;
-  background-color: #683BC2;
-  color: white;
-  cursor: pointer;
-  transition: 0.4s;
-  font-size: clamp(0.6rem, 1vw, 0.9rem);
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.guess-card {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-raised);
+  font-weight: 600;
+  font-size: clamp(0.75rem, 1vw, 0.92rem);
+  color: var(--text-primary);
+  width: 100%;
   text-align: center;
-  flex-shrink: 0;
-}
-.hint-button:hover {
-  background-color: #a47ef6;
-  color: black;
 }
 
-.hint-button.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.guess-card.correct {
+  border-color: var(--success);
+  background: var(--success-soft);
 }
 
-button:focus:not(:focus-visible) {
-  outline: none;
+.guess-card.incorrect {
+  border-color: var(--danger);
+  background: var(--danger-soft);
 }
 
-.search-overlay {
+/* ==========================================================================
+   Modals (welcome / new player options / filter / win / lose)
+   ========================================================================== */
+.overlay-screen {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 5, 8, 0.6);
+  backdrop-filter: blur(6px);
+  z-index: 15;
+}
+
+.modal-card {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-md);
+  max-width: clamp(320px, 80vw, 520px);
+  max-height: 90vh;
+  overflow-y: auto;
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 10;
-  background-color: rgba(22, 23, 29, 0.95);
-  padding: clamp(1.2rem, 2vw, 2.5rem);
-  border-radius: clamp(6px, 0.8vw, 12px);
-  border: clamp(2px, 0.2vw, 3px) solid #683BC2;
-  box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
-  max-width: 90vw;
-  width: clamp(280px, 30vw, 450px);
-}
-
-/* Overlay for blur effect */
-.overlay-screen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(6px);
-  z-index: 4;
-}
-
-/* Blur Utility */
-.blur {
-  filter: blur(3px);
-  pointer-events: none;
-  user-select: none;
-}
-
-/* Animations */
-.animate-in {
-  animation: fadeInUp 0.3s ease-out forwards;
-  opacity: 0;
-}
-
-@keyframes fadeInUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0px);
-    opacity: 1;
-  }
-}
-
-
-.win-box,
-.lose-box,
-.welcome-box {
-  background-color: #fff;
-  color: black;
-  border-radius: clamp(8px, 1vw, 15px);
-  text-align: center;
-  border: clamp(3px, 0.3vw, 5px) solid #683BC2;
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
-  max-width: clamp(320px, 80vw, 550px);
-  max-height: 90vh;
-  overflow-y: auto;
-  position: fixed;
-  backdrop-filter: blur(4px);
+  z-index: 20;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 100;
-  padding: clamp(0.5rem, 1.5vw, 1.5rem);
-
-  /* ✅ New additions */
   flex-direction: column;
-   top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-4);
 }
 
-.lose-box {
-  border-color: #d32f2f;
+.modal-card.accent-success {
+  border-color: var(--success);
+}
+.modal-card.accent-success h2 {
+  color: var(--success);
 }
 
-.lose-box h2 {
-  color: #d32f2f;
-  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+.modal-card.accent-danger {
+  border-color: var(--danger);
+}
+.modal-card.accent-danger h2 {
+  color: var(--danger);
 }
 
-.win-box h2 {
-  margin-bottom: 1rem;
-  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+.modal-card h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(1.2rem, 2.4vw, 1.7rem);
+}
+
+.modal-card p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: clamp(0.85rem, 1.3vw, 1rem);
+}
+
+.modal-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .welcome-box {
   text-align: left;
+  align-items: stretch;
 }
 
 .welcome-box h2 {
   text-align: center;
-  color: #683BC2;
-  margin-bottom: 1rem;
-  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+  color: var(--accent-hover);
 }
 
 .welcome-box h3 {
-  margin-top: 1.5rem;
-  margin-bottom: 0.5rem;
-  color: #683BC2;
-  font-size: clamp(1rem, 2vw, 1.3rem);
+  margin: var(--space-2) 0 0;
+  color: var(--accent-hover);
+  font-size: clamp(1rem, 1.9vw, 1.2rem);
 }
 
 .rules-content {
-  font-size: clamp(0.8rem, 1.4vw, 1rem);
-  line-height: 1.4;
+  font-size: clamp(0.82rem, 1.3vw, 0.98rem);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.current-mode-note {
+  color: var(--text-secondary);
+  font-size: clamp(0.8rem, 1.2vw, 0.92rem);
+  margin: 0 0 var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.current-mode-note strong {
+  color: var(--accent-hover);
 }
 
 .rules-content ul {
-  margin: 0.5rem 0 1rem 1rem;
-  padding-left: 1rem;
+  margin: var(--space-2) 0 0;
+  padding-left: 1.1rem;
 }
 
 .rules-content li {
-  margin-bottom: 0.3rem;
-}
-
-.rules-content p {
-  text-align: center;
-  margin-top: 1.5rem;
-  font-size: clamp(0.9rem, 1.6vw, 1.1rem);
+  margin-bottom: var(--space-1);
 }
 
 .mugshot {
-  width: clamp(80px, 10vw, 140px);
-  height: clamp(100px, 13vw, 180px);
+  width: clamp(90px, 10vw, 140px);
+  height: clamp(110px, 13vw, 180px);
   object-fit: cover;
-  border: clamp(2px, 0.25vw, 4px) solid black;
-  border-radius: 10%;
-  margin: clamp(0.6rem, 1.2vh, 1.2rem) 0;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius-md);
 }
 
-/* Button Components */
 .dismiss-button {
   position: absolute;
-  top: clamp(0.8rem, 1.5vh, 2rem);
-  right: clamp(0.8rem, 1.5vh, 2rem);
-  z-index: 10;
-  padding: clamp(6px, 1vh, 10px) clamp(12px, 1.8vw, 20px);
-  background-color: #683BC2;
-  color: white;
-  border: clamp(1px, 0.15vw, 2px) solid black;
-  border-radius: clamp(6px, 0.8vw, 10px);
+  top: var(--space-3);
+  right: var(--space-3);
+  z-index: 21;
+  width: clamp(28px, 3.2vw, 34px);
+  height: clamp(28px, 3.2vw, 34px);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
   cursor: pointer;
-  transition: 0.3s ease;
-  font-size: clamp(0.7rem, 1.2vw, 1rem);
+  transition: all 0.2s ease;
+  font-size: clamp(1.1rem, 1.8vw, 1.4rem);
+  line-height: 1;
 }
 
 .dismiss-button:hover {
-  background-color: #a47ef6;
-  color: black;
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
-.new-player-options {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: clamp(0.8rem, 1.5vh, 1.2rem);
-  margin-top: 1rem;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 5;
-  background-color: rgba(255, 255, 255, 0.95);
-  padding: clamp(1.2rem, 2.5vw, 2.5rem);
-  border-radius: clamp(8px, 1vw, 15px);
-  border: clamp(2px, 0.25vw, 4px) solid #683BC2;
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
-}
-
-.option-button {
-  padding: clamp(0.6rem, 1.4vh, 1rem) clamp(1.2rem, 2.2vw, 2rem);
-  font-size: clamp(0.8rem, 1.4vw, 1.2rem);
-  border: clamp(2px, 0.25vw, 4px) solid black;
-  border-radius: 8%;
-  background-color: #683BC2;
-  color: white;
-  cursor: pointer;
-  transition: 0.4s;
-  min-width: clamp(130px, 20vw, 180px);
-  font-weight: 500;
-}
-
-.option-button:hover {
-  background-color: #a47ef6;
-  color: black;
-}
-
-
-
-.new-game-button {
-  padding: clamp(6px, 1vh, 10px) clamp(12px, 1.8vw, 20px);
-  background-color: #683BC2;
-  color: white;
-  border: clamp(1px, 0.15vw, 2px) solid black;
-  border-radius: clamp(6px, 0.8vw, 10px);
-  cursor: pointer;
-  transition: 0.3s ease;
-  font-size: clamp(0.7rem, 1.2vw, 1rem);
-  font-weight: 500;
-}
-
-.new-game-button:hover {
-  background-color: #a47ef6;
-  color: black;
-}
-
-/* Remove the old top-section since we're using main-content now */
-.top-section {
-  display: none;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .main-content {
-    flex-direction: column;
-    align-items: center;
-    gap: clamp(0.5rem, 1vh, 1rem); /* Reduced gap for mobile */
-  }
-  
-  .team-section,
-  .hint-section {
-    width: 100%;
-    max-width: 400px;
-  }
-  
-  .team-section {
-    order: 1;
-  }
-  
-  .main-game-section {
-    order: 2;
-    max-width: 100%;
-  }
-  
-  .hint-section {
-    order: 3;
-    margin-top: clamp(0.5rem, 1vh, 1rem); /* Move up closer to hint buttons */
-  }
-  
-  /* Move guess-grid directly under hint section on mobile */
-  .guess-grid {
-    order: 4;
-    margin-top: clamp(0.5rem, 1vh, 1rem); /* Move up closer to hint section */
-  }
-  
-  .hint-grid {
-    gap: clamp(4px, 1vw, 10px);
-    margin-bottom: clamp(0.5rem, 1vh, 1rem); /* Add small gap before hint section */
-  }
-}
-
-@media (max-width: 480px) {
-  .main-content {
-    gap: clamp(0.3rem, 0.8vh, 0.8rem); /* Even smaller gap for very small screens */
-  }
-  
-  .hint-section {
-    margin-top: clamp(0.3rem, 0.6vh, 0.6rem); /* Bring even closer on small screens */
-  }
-  
-  .guess-grid {
-    margin-top: clamp(0.3rem, 0.6vh, 0.6rem); /* Bring even closer on small screens */
-  }
-  
-  .hint-button {
-    width: clamp(56px, 10vw, 90px);
-    height: clamp(30px, 4vh, 40px);
-    font-size: clamp(0.5rem, 1.5vw, 0.8rem);
-  }
-  
-  .guess-card {
-    padding: clamp(4px, 0.8vh, 8px);
-    font-size: clamp(0.6rem, 0.9vw, 0.8rem);
-  }
-  
-  .player-mug {
-    width: clamp(100px, 18vw, 160px);
-    height: clamp(130px, 22vh, 150px);
-  }
-}
-
-/* Large screen optimizations */
-@media (min-width: 1500px) {
-  #root {
-    max-width: 1800px;
-  }
-  
-  .main-content {
-    gap: clamp(2rem, 3vw, 8rem);
-    padding: 0 clamp(1rem, 3vw, 3rem);
-  }
-}
-
-@media (max-width: 600px) {
-  .buttons-section {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: clamp(0.6rem, 1.2vw, 1rem);
-  }
-
-  .guess-button,
-  .new-player-button {
-    width: clamp(100px, 40vw, 160px);
-    height: clamp(35px, 5vh, 45px);
-    font-size: clamp(0.7rem, 1.2vw, 1rem);
-  }
-}
-
-.guess-button:disabled {
-  background-color: #ccc;        /* Light gray background */
-  color: #666;                   /* Dimmed text */
-  cursor: not-allowed;          /* Cursor shows it's not clickable */
-  opacity: 0.7;                  /* Optional subtle transparency */
-}
-
-.guess-logo {
-  width: clamp(80px, 10vw, 140px);
-  height: auto;
-  margin: 0 auto;
-  display: block;
-  user-select: none;
-  pointer-events: none;
-}
-
-.hint-logo,
-.guess-logo {
-  width: clamp(80px, 10vw, 140px);
-  height: auto;
-  user-select: none;
-  pointer-events: none;
-  display: block;
-}
-/* Filter System Styles */
+/* ---- Filter panel ---- */
 .filter-overlay {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 10;
-  background-color: #fff;
-  padding: clamp(1rem, 2.5vw, 2rem);
-  border-radius: clamp(8px, 1vw, 15px);
-  border: clamp(2px, 0.3vw, 4px) solid #683BC2;
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+  z-index: 20;
+  padding: var(--space-4);
   max-width: 90vw;
   max-height: 90vh;
   width: clamp(400px, 50vw, 600px);
-  overflow-y: auto;
-  color: #333;
+  overflow: hidden;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
 }
 
 .filter-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: clamp(1rem, 2vh, 1.5rem);
-  padding-bottom: clamp(0.5rem, 1vh, 1rem);
-  border-bottom: 2px solid #683BC2;
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .filter-header h3 {
-  color: #683BC2;
+  color: var(--text-primary);
   margin: 0;
-  font-size: clamp(1.2rem, 2.5vw, 1.6rem);
-}
-
-.filter-actions {
-  display: flex;
-  gap: clamp(0.5rem, 1vw, 0.8rem);
+  font-size: clamp(1.1rem, 2.2vw, 1.4rem);
 }
 
 .clear-filters-btn {
-  padding: clamp(4px, 0.8vh, 8px) clamp(8px, 1.2vw, 12px);
-  background-color: #dc3545;
-  color: white;
-  border: 1px solid #c82333;
-  border-radius: clamp(4px, 0.6vw, 6px);
+  padding: clamp(4px, 0.8vh, 7px) clamp(10px, 1.2vw, 14px);
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: clamp(0.7rem, 1vw, 0.9rem);
-  transition: all 0.3s ease;
+  font-size: clamp(0.72rem, 1vw, 0.86rem);
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
 
-.clear-filters-btn:hover {
-  background-color: #c82333;
-  transform: translateY(-1px);
+.clear-filters-btn:hover:not(:disabled) {
+  background: var(--danger-soft);
 }
 
 .filter-content {
-  max-height: 60vh;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
-  margin-bottom: clamp(1rem, 2vh, 1.5rem);
-  padding-right: clamp(4px, 0.5vw, 8px);
+  margin-bottom: var(--space-3);
+  padding-right: var(--space-1);
 }
 
 .filter-section {
-  margin-bottom: clamp(1rem, 2vh, 1.5rem);
-  padding: clamp(0.8rem, 1.5vh, 1.2rem);
-  background-color: #f8f9fa;
-  border-radius: clamp(6px, 0.8vw, 10px);
-  border: 1px solid #e9ecef;
+  margin-bottom: var(--space-3);
+  padding: var(--space-3);
+  background: var(--surface-sunken);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
 }
 
 .filter-section h4 {
-  color: #683BC2;
-  margin: 0 0 clamp(0.5rem, 1vh, 0.8rem) 0;
-  font-size: clamp(1rem, 1.8vw, 1.2rem);
+  color: var(--accent-hover);
+  margin: 0 0 var(--space-2);
+  font-size: clamp(0.9rem, 1.6vw, 1.05rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mode-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  max-width: clamp(320px, 66vw, 720px);
+  margin: 0 auto;
+}
+
+.mode-description {
+  margin: var(--space-1) auto 0;
+  max-width: clamp(320px, 66vw, 720px);
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: clamp(0.72rem, 1vw, 0.85rem);
+}
+
+.mode-button {
+  flex: 1;
+  min-width: clamp(110px, 22vw, 150px);
+  padding: clamp(8px, 1.3vh, 11px) var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: clamp(0.78rem, 1.1vw, 0.9rem);
   font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.mode-button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent-hover);
+}
+
+.mode-button.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.mode-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .filter-row {
   display: flex;
-  gap: clamp(0.8rem, 1.5vw, 1.2rem);
-  margin-bottom: clamp(0.6rem, 1vh, 1rem);
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
   flex-wrap: wrap;
+}
+
+.filter-row:last-child {
+  margin-bottom: 0;
 }
 
 .filter-group {
@@ -825,36 +850,37 @@ button:focus:not(:focus-visible) {
   min-width: clamp(120px, 20vw, 180px);
   display: flex;
   flex-direction: column;
-  gap: clamp(4px, 0.5vh, 6px);
+  gap: var(--space-1);
 }
 
 .filter-group label {
   font-weight: 600;
-  color: #495057;
-  font-size: clamp(0.8rem, 1.2vw, 0.95rem);
+  color: var(--text-secondary);
+  font-size: clamp(0.75rem, 1.1vw, 0.88rem);
 }
 
 .filter-group input,
 .filter-group select {
-  padding: clamp(6px, 1vh, 10px) clamp(8px, 1.2vw, 12px);
-  border: 2px solid #dee2e6;
-  border-radius: clamp(4px, 0.6vw, 6px);
-  font-size: clamp(0.8rem, 1.2vw, 0.9rem);
-  background-color: white;
-  transition: all 0.3s ease;
-  color: #495057;
+  padding: clamp(7px, 1vh, 10px) clamp(9px, 1.2vw, 12px);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: clamp(0.78rem, 1.1vw, 0.9rem);
+  background: var(--surface);
+  color: var(--text-primary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: inherit;
 }
 
 .filter-group input:focus,
 .filter-group select:focus {
   outline: none;
-  border-color: #683BC2;
-  box-shadow: 0 0 0 3px rgba(104, 59, 194, 0.1);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .filter-group input:hover,
 .filter-group select:hover {
-  border-color: #adb5bd;
+  border-color: var(--text-muted);
 }
 
 .filter-group select {
@@ -862,127 +888,187 @@ button:focus:not(:focus-visible) {
 }
 
 .filter-footer {
-  display: flex;
-  justify-content: center;
-  padding-top: clamp(0.8rem, 1.5vh, 1.2rem);
-  border-top: 2px solid #e9ecef;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.filter-footer .clear-filters-btn {
+  justify-self: start;
+}
+
+.filter-footer .apply-filters-btn {
+  justify-self: center;
 }
 
 .apply-filters-btn {
-  padding: clamp(8px, 1.5vh, 12px) clamp(1.5rem, 3vw, 2.5rem);
-  background-color: #683BC2;
+  padding: clamp(9px, 1.5vh, 12px) clamp(1.6rem, 3vw, 2.4rem);
+  background: var(--accent);
   color: white;
-  border: 2px solid #683BC2;
-  border-radius: clamp(6px, 0.8vw, 10px);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: clamp(0.9rem, 1.4vw, 1.1rem);
-  font-weight: 600;
-  transition: all 0.3s ease;
-  min-width: clamp(120px, 20vw, 160px);
+  font-size: clamp(0.85rem, 1.3vw, 1.02rem);
+  font-weight: 700;
+  transition: all 0.2s ease;
+  min-width: clamp(140px, 20vw, 180px);
 }
 
-.apply-filters-btn:hover {
-  background-color: #a47ef6;
-  border-color: #a47ef6;
-  color: #333;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(104, 59, 194, 0.3);
+.apply-filters-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  transform: translateY(-1px);
 }
 
-/* Update the filter button to show active count */
-.filter-button {
-  width: clamp(110px, 14vw, 170px);
-  height: clamp(35px, 4.5vh, 40px);
-  border: clamp(2px, 0.25vw, 3px) solid black;
-  border-radius: 8%;
-  background-color: #683BC2;
-  color: white;
-  cursor: pointer;
-  transition: 0.4s;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  white-space: nowrap;
-  text-align: center;
-  font-size: clamp(0.8rem, 1.2vw, 1.1rem);
-  font-weight: 500;
-  position: relative;
-}
-
-.filter-button:hover {
-  background-color: #a47ef6;
-  color: black;
-}
-
-/* Active filter indicator */
-.filter-button.active {
-  background-color: #28a745;
-  border-color: #28a745;
-}
-
-.filter-button.active:hover {
-  background-color: #34ce57;
-}
-
-/* Custom scrollbar for filter content */
-.filter-content::-webkit-scrollbar {
+.filter-content::-webkit-scrollbar,
+.hint-block-container::-webkit-scrollbar,
+.team-list::-webkit-scrollbar {
   width: 6px;
 }
 
-.filter-content::-webkit-scrollbar-track {
-  background: #f1f1f1;
+.filter-content::-webkit-scrollbar-track,
+.hint-block-container::-webkit-scrollbar-track,
+.team-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.filter-content::-webkit-scrollbar-thumb,
+.hint-block-container::-webkit-scrollbar-thumb,
+.team-list::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
   border-radius: 3px;
 }
 
-.filter-content::-webkit-scrollbar-thumb {
-  background: #683BC2;
-  border-radius: 3px;
+/* ==========================================================================
+   Motion
+   ========================================================================== */
+/* Uses the standalone `translate` property (not `transform`) so this
+   composes with elements that already use `transform` for fixed-position
+   centering (e.g. translate(-50%, -50%)) instead of clobbering it. */
+.animate-in {
+  animation: fadeInUp 0.25s ease-out forwards;
 }
 
-.filter-content::-webkit-scrollbar-thumb:hover {
-  background: #a47ef6;
+@keyframes fadeInUp {
+  from {
+    translate: 0 14px;
+    opacity: 0;
+  }
+  to {
+    translate: 0 0;
+    opacity: 1;
+  }
 }
 
-/* Mobile responsiveness for filters */
-@media (max-width: 768px) {
-  .filter-overlay {
-    width: 95vw;
-    max-height: 85vh;
-    padding: clamp(0.8rem, 2vw, 1.2rem);
+@media (prefers-reduced-motion: reduce) {
+  .animate-in {
+    animation: none;
   }
-  
-  .filter-row {
-    flex-direction: column;
-    gap: clamp(0.5rem, 1vh, 0.8rem);
+  .btn {
+    transition: none;
   }
-  
-  .filter-group {
-    min-width: 100%;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+@media (max-width: 900px) {
+  .main-content {
+    grid-template-columns: 1fr;
+    justify-items: center;
   }
-  
-  .filter-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: clamp(0.5rem, 1vh, 0.8rem);
+
+  .team-section,
+  .hint-section {
+    width: 100%;
+    max-width: 480px;
   }
-  
-  .filter-actions {
-    justify-content: center;
+
+  .team-section {
+    order: 1;
+  }
+
+  .main-game-section {
+    order: 2;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .hint-section {
+    order: 3;
+  }
+
+  .guess-grid {
+    order: 4;
+    max-width: 480px;
   }
 }
 
 @media (max-width: 480px) {
+  .btn-primary {
+    width: 100%;
+  }
+
+  .player-mug {
+    width: clamp(100px, 18vw, 160px);
+    height: clamp(130px, 22vh, 150px);
+  }
+
+  .guess-card {
+    padding: clamp(4px, 0.8vh, 8px);
+    font-size: clamp(0.6rem, 0.9vw, 0.8rem);
+  }
+
+  .mode-bar {
+    max-width: 100%;
+  }
+
+  .mode-button {
+    min-width: clamp(90px, 40vw, 150px);
+  }
+
+  .secondary-actions {
+    flex-direction: column;
+  }
+
+  .hint-button {
+    min-width: clamp(56px, 20vw, 90px);
+  }
+
   .filter-overlay {
-    width: 98vw;
-    height: 90vh;
-    padding: clamp(0.6rem, 1.5vw, 1rem);
+    width: 95vw;
+    max-height: 88vh;
   }
-  
-  .filter-section {
-    padding: clamp(0.6rem, 1.2vh, 1rem);
+
+  .filter-row {
+    flex-direction: column;
   }
-  
-  .filter-content {
-    max-height: 55vh;
+
+  .filter-group {
+    min-width: 100%;
+  }
+
+  .filter-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .filter-footer {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: var(--space-2);
+  }
+
+  .filter-footer .apply-filters-btn {
+    order: 1;
+  }
+
+  .filter-footer .clear-filters-btn {
+    order: 2;
   }
 }

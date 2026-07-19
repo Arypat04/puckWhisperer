@@ -74,20 +74,23 @@ export function useTeams() {
 }
 
 // Hook to get a random player, optionally filtered (position, sweaterNumber,
-// stats.games/goals/assists/points minimums, draft.year, draft.round)
-export function useRandomPlayer(filters = {}) {
+// stats.games/goals/assists/points minimums, draft.year, draft.round,
+// isActive/hasAwards/hallOfFame/topAllTime game-mode presets).
+// Fetches once on mount using `initialFilters`; every fetch after that is
+// explicit (call fetchRandomPlayer(filters) yourself) - filter state
+// changing on its own must never silently swap the active player out from
+// under a round.
+export function useRandomPlayer(initialFilters = {}) {
   const [player, setPlayer] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const hasFetched = useRef(false);
-  const filtersRef = useRef();
 
-  const fetchRandomPlayer = async (customFilters = null) => {
+  const fetchRandomPlayer = async (filters = {}) => {
     try {
       setLoading(true);
       setError(null);
-      const activeFilters = customFilters || filters;
-      const params = new URLSearchParams(activeFilters);
+      const params = new URLSearchParams(filters);
 
       const response = await fetch(`${API_BASE_URL}/players/random?${params}`);
 
@@ -98,28 +101,22 @@ export function useRandomPlayer(filters = {}) {
 
       const data = await response.json();
       setPlayer(data);
+      return data;
     } catch (err) {
       setError(err.message);
+      return null;
     } finally {
       setLoading(false);
     }
   };
 
-  // Check if filters have changed
-  const filtersChanged = JSON.stringify(filters) !== JSON.stringify(filtersRef.current);
-
   useEffect(() => {
-    if (!hasFetched.current || filtersChanged) {
+    if (!hasFetched.current) {
       hasFetched.current = true;
-      filtersRef.current = filters;
-      fetchRandomPlayer();
+      fetchRandomPlayer(initialFilters);
     }
-  }, [JSON.stringify(filters)]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  return {
-    player,
-    loading,
-    error,
-    refetch: fetchRandomPlayer
-  };
+  return { player, loading, error, fetchRandomPlayer };
 }
