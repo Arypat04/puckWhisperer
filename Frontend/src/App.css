@@ -686,6 +686,9 @@ svg.trophy-icon {
   margin: 0;
   color: var(--text-primary);
   font-size: clamp(1.2rem, 2.4vw, 1.7rem);
+  /* Symmetric reserve so a wrapped/centered title never renders under the
+     dismiss button sitting in the top-right corner. */
+  padding: 0 clamp(32px, 5vw, 48px);
 }
 
 .modal-card p {
