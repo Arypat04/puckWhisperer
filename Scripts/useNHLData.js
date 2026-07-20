@@ -1,7 +1,7 @@
 // hooks/useNHLData.js - Custom React hooks for NHL data
 import { useState, useEffect, useRef } from 'react';
 
-const API_BASE_URL = 'https://puckwhisperer-backend.onrender.com/api';
+export const API_BASE_URL = 'http://localhost:3001/api';
 
 // Hook to search players
 export function usePlayerSearch(query) {
@@ -119,4 +119,36 @@ export function useRandomPlayer(initialFilters = {}) {
   }, []);
 
   return { player, loading, error, fetchRandomPlayer };
+}
+
+// Hook for the deterministic daily-challenge player (same player for every
+// visitor on a given UTC day - see Backend's /api/players/daily). Never
+// auto-fetches on mount; the caller decides when a fetch is needed (e.g. on
+// first render, to check whether today's challenge was already completed,
+// and again whenever the player opens the Daily Challenge button).
+export function useDailyPlayer() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchDailyPlayer = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch(`${API_BASE_URL}/players/daily`);
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to fetch the daily player');
+      }
+
+      return await response.json();
+    } catch (err) {
+      setError(err.message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { loading, error, fetchDailyPlayer };
 }

@@ -15,6 +15,7 @@ const app = express();
 
 let db;
 let collection;
+let dailyPicksCollection;
 const PORT = process.env.PORT;
 
 // MongoDB setup
@@ -30,6 +31,11 @@ async function connectDB() {
     await client.connect();
     db = client.db(DB_NAME);
     collection = db.collection(COLLECTION_NAME);
+    dailyPicksCollection = db.collection('dailyPicks');
+    // Unique on date so two requests racing to pick the first-ever value for
+    // a given day can't both insert - the loser's upsert just resolves to
+    // the winner's document instead of erroring.
+    await dailyPicksCollection.createIndex({ date: 1 }, { unique: true });
     console.log('Connected to MongoDB successfully');
     return true;
   } catch (error) {
@@ -78,6 +84,25 @@ function asPlainString(value) {
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+
+// Deterministic djb2-style string hash so the daily pick rotates once a day
+// but is identical for every player hitting the endpoint that day.
+function hashString(str) {
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) + hash + str.charCodeAt(i)) >>> 0;
+  }
+  return hash;
+}
+
+// Recognizable-only pool for the daily challenge - current NHL players are
+// the players casual fans are most likely to actually know, so the daily
+// draws only from them rather than the full historical roster. The games
+// floor additionally excludes fringe call-ups/depth players who are
+// technically active but have barely played (e.g. a 4-point rookie
+// defenseman) - 100 games is roughly a season and a bit, enough to have
+// been a real NHL regular rather than a September cup of coffee.
+const DAILY_POOL_FILTER = { isActive: true, 'stats.games': { $gte: 100 } };
 
 // Builds a Mongo filter from the query params the frontend's filter panel
 // and search/random endpoints send.
@@ -152,6 +177,50 @@ app.get('/api/players/random', checkDB, async (req, res) => {
   } catch (error) {
     console.error('Error getting random player:', error);
     res.status(500).json({ error: 'Failed to get random player' });
+  }
+});
+
+app.get('/api/players/daily', checkDB, async (req, res) => {
+  try {
+    const dailyDate = new Date().toISOString().slice(0, 10);
+
+    // The day's pick is cached in `dailyPicks` the first time anyone asks
+    // for it, so a mid-day roster update (a player added/removed from
+    // DAILY_POOL_FILTER, which would shift `count` and every skip() index)
+    // can't change who "today's player" is for visitors who load later.
+    const cached = await dailyPicksCollection.findOne({ date: dailyDate });
+    let player = cached ? await collection.findOne({ id: cached.playerId }) : null;
+
+    if (!player) {
+      const count = await collection.countDocuments(DAILY_POOL_FILTER);
+      if (count === 0) {
+        return res.status(404).json({ error: 'No players available for the daily challenge' });
+      }
+
+      const index = hashString(dailyDate) % count;
+      const [picked] = await collection
+        .find(DAILY_POOL_FILTER)
+        .sort({ _id: 1 })
+        .skip(index)
+        .limit(1)
+        .toArray();
+
+      // Upsert so a concurrent request that also missed the cache can't
+      // create two different picks for the same day - the unique index on
+      // `date` makes the second writer's insert resolve to the first's.
+      await dailyPicksCollection.updateOne(
+        { date: dailyDate },
+        { $setOnInsert: { date: dailyDate, playerId: picked.id } },
+        { upsert: true }
+      );
+      const settled = await dailyPicksCollection.findOne({ date: dailyDate });
+      player = settled.playerId === picked.id ? picked : await collection.findOne({ id: settled.playerId });
+    }
+
+    res.json({ ...player, dailyDate });
+  } catch (error) {
+    console.error('Error fetching daily player:', error);
+    res.status(500).json({ error: 'Failed to fetch the daily player' });
   }
 });
 

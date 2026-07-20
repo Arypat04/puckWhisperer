@@ -45,18 +45,25 @@
 /* ==========================================================================
    Root layout
    ========================================================================== */
+/* The glow lives on `body` (full viewport width) rather than #root, so on
+   very wide monitors the space outside the content column reads as
+   intentional atmosphere instead of a blank strip reserved for something
+   that isn't there. */
+body {
+  background:
+    var(--bg-glow-1),
+    var(--bg-glow-2),
+    var(--bg-base);
+}
+
 #root {
-  max-width: 1440px;
+  max-width: 1680px;
   margin: 0 auto;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-3) clamp(0.8rem, 2vw, 2rem) var(--space-5);
-  background:
-    var(--bg-glow-1),
-    var(--bg-glow-2),
-    var(--bg-base);
 }
 
 * {
@@ -82,10 +89,7 @@
   filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.5));
 }
 
-.help-button {
-  position: absolute;
-  top: var(--space-2);
-  right: 0;
+.icon-button {
   width: clamp(30px, 3.4vw, 38px);
   height: clamp(30px, 3.4vw, 38px);
   padding: 0;
@@ -100,12 +104,61 @@
   font-size: clamp(1rem, 1.6vw, 1.2rem);
   line-height: 1;
   cursor: pointer;
+  text-decoration: none;
   transition: all 0.2s ease;
 }
 
-.help-button:hover {
+.icon-button:hover {
   border-color: var(--accent);
   color: var(--accent-hover);
+}
+
+.donate-button {
+  position: absolute;
+  top: var(--space-2);
+  left: 0;
+}
+
+.donate-button:hover {
+  border-color: #e0b23c;
+  color: #e0b23c;
+}
+
+.header-actions-right {
+  position: absolute;
+  top: var(--space-2);
+  right: 0;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.daily-button {
+  display: block;
+  margin: 0 auto;
+  padding: clamp(7px, 1.1vh, 10px) clamp(1.2rem, 3vw, 2rem);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: clamp(0.78rem, 1.1vw, 0.92rem);
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.daily-button:hover:not(:disabled) {
+  background: var(--accent);
+}
+
+.daily-button.completed {
+  border-color: var(--success);
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.daily-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* ==========================================================================
@@ -123,7 +176,7 @@
    ========================================================================== */
 .main-content {
   display: grid;
-  grid-template-columns: minmax(220px, 340px) minmax(300px, 480px) minmax(220px, 340px);
+  grid-template-columns: minmax(240px, 400px) minmax(300px, 500px) minmax(240px, 400px);
   justify-content: center;
   align-items: start;
   gap: var(--space-4);
@@ -197,13 +250,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-3);
+  gap: var(--space-2);
+  padding: var(--space-3);
 }
 
 .player-mug {
-  width: clamp(140px, 15vw, 210px);
-  height: clamp(180px, 19vh, 260px);
+  width: clamp(120px, 13vw, 190px);
+  height: clamp(150px, 16vh, 230px);
   border: 2px solid var(--border-strong);
   border-radius: var(--radius-md);
   object-fit: cover;
@@ -530,37 +583,49 @@ svg.trophy-icon {
   padding: var(--space-3) 0;
 }
 
-/* ---- Guess history strip ---- */
-.guess-grid {
+/* ---- Guess history (compact - lives in the center column so it's never
+   below the fold behind the three-panel row) ---- */
+.guess-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
   width: 100%;
-  max-width: clamp(300px, 35vw, 480px);
-  margin: 0 auto;
 }
 
-.guess-card {
-  border: 1px solid var(--border-strong);
+.guess-section .guess-logo {
+  width: clamp(60px, 6vw, 90px);
+}
+
+.guess-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  justify-content: center;
+  width: 100%;
+}
+
+.guess-chip {
+  padding: clamp(5px, 0.9vh, 8px) clamp(8px, 1.2vw, 12px);
   border-radius: var(--radius-sm);
-  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-strong);
   background: var(--surface-raised);
   font-weight: 600;
-  font-size: clamp(0.75rem, 1vw, 0.92rem);
+  font-size: clamp(0.66rem, 0.9vw, 0.8rem);
   color: var(--text-primary);
-  width: 100%;
-  text-align: center;
+  white-space: nowrap;
 }
 
-.guess-card.correct {
+.guess-chip.correct {
   border-color: var(--success);
   background: var(--success-soft);
+  color: var(--success);
 }
 
-.guess-card.incorrect {
+.guess-chip.incorrect {
   border-color: var(--danger);
   background: var(--danger-soft);
+  color: var(--danger);
 }
 
 /* ==========================================================================
@@ -610,6 +675,13 @@ svg.trophy-icon {
   color: var(--danger);
 }
 
+.modal-card.accent-daily {
+  border-color: #e0b23c;
+}
+.modal-card.accent-daily h2 {
+  color: #e0b23c;
+}
+
 .modal-card h2 {
   margin: 0;
   color: var(--text-primary);
@@ -627,6 +699,49 @@ svg.trophy-icon {
   gap: var(--space-2);
   flex-wrap: wrap;
   justify-content: center;
+}
+
+.share-grid {
+  display: flex;
+  gap: 6px;
+  font-size: clamp(1.4rem, 3vw, 1.8rem);
+  line-height: 1;
+}
+
+.daily-next {
+  font-size: clamp(0.72rem, 1vw, 0.85rem);
+  color: var(--text-muted);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.stat-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.stat-value {
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  font-weight: 800;
+  color: var(--accent-hover);
+}
+
+.stat-label {
+  font-size: clamp(0.7rem, 1vw, 0.82rem);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .welcome-box {
@@ -792,12 +907,17 @@ svg.trophy-icon {
   flex-wrap: wrap;
   justify-content: center;
   gap: var(--space-2);
-  max-width: clamp(320px, 66vw, 720px);
+  /* Wide enough to fit all 5 mode buttons on one row on typical laptop/
+     desktop widths (>=~1050px) - a wrapped second row was one of the
+     biggest contributors to pushing the game panel below the fold. */
+  max-width: clamp(320px, 72vw, 760px);
   margin: 0 auto;
 }
 
 .mode-description {
-  margin: var(--space-1) auto 0;
+  /* Cancels most of #root's flex `gap` above this element so it reads as
+     a caption glued to the mode bar rather than its own spaced-out row. */
+  margin: calc(var(--space-1) - var(--space-3)) auto 0;
   max-width: clamp(320px, 66vw, 720px);
   text-align: center;
   color: var(--text-secondary);
@@ -806,14 +926,14 @@ svg.trophy-icon {
 
 .mode-button {
   flex: 1;
-  min-width: clamp(110px, 22vw, 150px);
-  padding: clamp(8px, 1.3vh, 11px) var(--space-2);
+  min-width: clamp(96px, 17vw, 128px);
+  padding: clamp(7px, 1.1vh, 9px) var(--space-2);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text-primary);
   cursor: pointer;
-  font-size: clamp(0.78rem, 1.1vw, 0.9rem);
+  font-size: clamp(0.74rem, 1vw, 0.86rem);
   font-weight: 600;
   transition: all 0.2s ease;
 }
@@ -1001,11 +1121,6 @@ svg.trophy-icon {
   .hint-section {
     order: 3;
   }
-
-  .guess-grid {
-    order: 4;
-    max-width: 480px;
-  }
 }
 
 @media (max-width: 480px) {
@@ -1016,11 +1131,6 @@ svg.trophy-icon {
   .player-mug {
     width: clamp(100px, 18vw, 160px);
     height: clamp(130px, 22vh, 150px);
-  }
-
-  .guess-card {
-    padding: clamp(4px, 0.8vh, 8px);
-    font-size: clamp(0.6rem, 0.9vw, 0.8rem);
   }
 
   .mode-bar {

@@ -1,11 +1,20 @@
 import { useState, useEffect } from 'react';
 import './App.css';
-import { usePlayerSearch, useRandomPlayer, useTeams } from '../../Scripts/useNHLData';
+import { usePlayerSearch, useRandomPlayer, useTeams, useDailyPlayer } from '../../Scripts/useNHLData';
+import {
+  getDailyRecord,
+  getStats as getLifetimeStats,
+  recordDailyResult,
+  updateAggregateStats,
+  buildShareText
+} from './dailyStats';
 import puckLogo from '../5320889F-C24B-44FF-BA4F-626C46DCAB12.png';
 import hintLogo from '../src/assets/9E113A00-EBF1-4458-AC2F-58895EF9131F.PNG';
 import teamsLogo from '../src/assets/BC0625CC-DCE0-4267-98EF-88D7D80B6FCA.PNG';
 import questionMark from '../src/assets/question.png';
 import guessLogo from '../src/assets/raw.png';
+
+const DONATE_URL = 'https://buymeacoffee.com/puckwhisperer';
 
 const EMPTY_FILTERS = {
   position: '',
@@ -113,15 +122,38 @@ function App() {
   const [filters, setFilters] = useState(GAME_MODES[0].filters);
   const [tempFilters, setTempFilters] = useState(EMPTY_FILTERS);
 
+  const [isDailyMode, setIsDailyMode] = useState(false);
+  const [dailyRecord, setDailyRecord] = useState(null);
+  const [showDailyResult, setShowDailyResult] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  const [stats, setStats] = useState(getLifetimeStats);
+
   const { results } = usePlayerSearch(query);
   const { teams } = useTeams();
   const { player: randomPlayer, loading: randomLoading, error: randomError, fetchRandomPlayer } = useRandomPlayer(filters);
+  const { loading: dailyLoading, error: dailyError, fetchDailyPlayer } = useDailyPlayer();
 
   useEffect(() => {
     if (randomPlayer) {
       setCorrectAnswer(randomPlayer);
     }
   }, [randomPlayer]);
+
+  // On first load, silently check whether today's daily challenge was
+  // already completed (so the button can show "Completed" immediately
+  // instead of only after the player clicks it).
+  useEffect(() => {
+    (async () => {
+      const daily = await fetchDailyPlayer();
+      if (!daily) return;
+      const existing = getDailyRecord(daily.dailyDate);
+      if (existing) {
+        setDailyRecord({ ...existing, playerName: daily.name });
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Starts a brand new round: fetches a player (using whatever filters are
   // passed) and resets every piece of round state together, atomically, so
@@ -132,10 +164,51 @@ function App() {
   const startNewRound = async (filtersForRound = filters) => {
     const result = await fetchRandomPlayer(filtersForRound);
     if (!result) return;
+    setIsDailyMode(false);
     setGuesses([]);
     setHasWon(false);
     setHasLost(false);
     setRevealedHints([]);
+  };
+
+  const refreshStats = () => setStats(getLifetimeStats());
+
+  // Opens the Daily Challenge: if today's puzzle was already solved/missed,
+  // shows the recap/share view instead of letting the player retry it.
+  const openDailyChallenge = async () => {
+    const daily = await fetchDailyPlayer();
+    if (!daily) return;
+
+    const existing = getDailyRecord(daily.dailyDate);
+    if (existing) {
+      setDailyRecord({ ...existing, playerName: daily.name });
+      setShowDailyResult(true);
+      return;
+    }
+
+    setIsDailyMode(true);
+    setCorrectAnswer(daily);
+    setGuesses([]);
+    setRevealedHints([]);
+    setHasWon(false);
+    setHasLost(false);
+  };
+
+  const handleShareResult = async () => {
+    if (!dailyRecord) return;
+    const text = buildShareText({
+      won: dailyRecord.won,
+      guesses: dailyRecord.guesses,
+      origin: window.location.origin
+    });
+    try {
+      await navigator.clipboard.writeText(text);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      // Clipboard permission denied/unavailable - the button just won't
+      // flip to "Copied!"; nothing else depends on this succeeding.
+    }
   };
 
   const handleFilterChange = (key, value) => {
@@ -187,7 +260,7 @@ function App() {
   };
 
   const isHintClickable = (hintNumber) => {
-    if (!correctAnswer || randomLoading) return false;
+    if (!correctAnswer || anyRoundLoading) return false;
     return hintNumber === 1 || revealedHints.includes(hintNumber - 1);
   };
 
@@ -252,10 +325,23 @@ function App() {
     setQuery('');
     setShowSearch(false);
 
-    if (isCorrect) {
-      setHasWon(true);
-    } else if (updatedGuesses.length >= 3) {
-      setHasLost(true);
+    const won = isCorrect;
+    const lost = !isCorrect && updatedGuesses.length >= 3;
+    if (won) setHasWon(true);
+    else if (lost) setHasLost(true);
+
+    if (won || lost) {
+      if (isDailyMode && correctAnswer?.dailyDate) {
+        const record = recordDailyResult({
+          dateStr: correctAnswer.dailyDate,
+          won,
+          guesses: updatedGuesses
+        });
+        setDailyRecord({ ...record, playerName: correctAnswer.name });
+      } else {
+        updateAggregateStats({ won, isDaily: false });
+      }
+      refreshStats();
     }
   };
 
@@ -267,9 +353,11 @@ function App() {
     setShowFilter(false);
     setHasWon(false);
     setHasLost(false);
+    setShowDailyResult(false);
+    setShowStats(false);
   };
 
-  const anyOverlayOpen = showSearch || showManualPicker || showWelcomePopup || showFilter || hasWon || hasLost;
+  const anyOverlayOpen = showSearch || showManualPicker || showWelcomePopup || showFilter || hasWon || hasLost || showDailyResult || showStats;
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -282,21 +370,25 @@ function App() {
       else if (showFilter) setShowFilter(false);
       else if (hasWon) setHasWon(false);
       else if (hasLost) setHasLost(false);
+      else if (showDailyResult) setShowDailyResult(false);
+      else if (showStats) setShowStats(false);
     };
 
     if (anyOverlayOpen) {
       window.addEventListener('keydown', handleKeyDown);
     }
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [anyOverlayOpen, showSearch, showManualPicker, showWelcomePopup, showFilter, hasWon, hasLost]);
+  }, [anyOverlayOpen, showSearch, showManualPicker, showWelcomePopup, showFilter, hasWon, hasLost, showDailyResult, showStats]);
 
   const getActiveFilterCount = () => Object.keys(filters).filter(k => !MODE_FILTER_KEYS.includes(k)).length;
 
-  const guessDisabled = hasWon || hasLost || guesses.length >= 3 || !correctAnswer || randomLoading;
+  const anyRoundLoading = randomLoading || dailyLoading;
+  const guessDisabled = hasWon || hasLost || guesses.length >= 3 || !correctAnswer || anyRoundLoading;
   const searchTitle = showManualPicker ? 'Choose the Mystery Player' : 'Make Your Guess';
   const currentYear = new Date().getFullYear();
   const trophyChips = revealedHints.includes(4) ? getTrophyChips(correctAnswer) : null;
   const currentModeInfo = GAME_MODES.find(m => m.key === mode) || GAME_MODES[0];
+  const winPct = stats.totalPlayed > 0 ? Math.round((stats.totalWon / stats.totalPlayed) * 100) : 0;
 
   return (
     <>
@@ -326,9 +418,39 @@ function App() {
       )}
 
       <div className="header-section">
+        <a
+          href={DONATE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="icon-button donate-button"
+          aria-label="Support PuckWhisperer"
+          title="Buy me a coffee"
+        >
+          ☕
+        </a>
         <img src={puckLogo} className="puck-logo" alt="Puck Logo" />
-        <button className="help-button" onClick={() => setShowWelcomePopup(true)} aria-label="Help">?</button>
+        <div className="header-actions-right">
+          <button
+            className="icon-button"
+            onClick={() => { setShowStats(true); refreshStats(); }}
+            aria-label="Stats"
+            title="Your stats"
+          >
+            📊
+          </button>
+          <button className="icon-button" onClick={() => setShowWelcomePopup(true)} aria-label="Help" title="How to play">?</button>
+        </div>
       </div>
+
+      <button
+        className={`daily-button ${dailyRecord ? 'completed' : ''}`}
+        onClick={openDailyChallenge}
+        disabled={anyRoundLoading}
+      >
+        {dailyRecord
+          ? '✓ Daily Challenge Complete'
+          : anyRoundLoading ? 'Loading…' : '🗓 Daily Challenge'}
+      </button>
 
       <div className="mode-bar">
         {GAME_MODES.map((m) => (
@@ -336,14 +458,17 @@ function App() {
             key={m.key}
             className={`mode-button ${mode === m.key ? 'selected' : ''}`}
             onClick={() => selectMode(m.key)}
-            disabled={randomLoading}
+            disabled={anyRoundLoading}
             title={m.hint}
           >
             {m.label}
           </button>
         ))}
       </div>
-      <p className="mode-description">{currentModeInfo.hint}</p>
+      <p className="mode-description">
+        {isDailyMode ? "Daily Challenge - today's puzzle, one try per day." : currentModeInfo.hint}
+      </p>
+      {dailyError && <p className="random-error">{dailyError}</p>}
 
       <div className="main-content">
         <div className="team-section panel">
@@ -364,9 +489,9 @@ function App() {
             <button
               className="btn btn-primary"
               onClick={() => startNewRound()}
-              disabled={randomLoading}
+              disabled={anyRoundLoading}
             >
-              {randomLoading ? 'Loading…' : 'Random Player'}
+              {anyRoundLoading ? 'Loading…' : 'Random Player'}
             </button>
 
             {randomError && <p className="random-error">{randomError}</p>}
@@ -401,6 +526,19 @@ function App() {
               </button>
             ))}
           </div>
+
+          {guesses.length > 0 && (
+            <div className="guess-section">
+              <img src={guessLogo} alt="Guesses" className="guess-logo" />
+              <div className="guess-chips">
+                {guesses.map((guess, index) => (
+                  <span key={index} className={`guess-chip ${guess.correct ? 'correct' : 'incorrect'}`}>
+                    #{guess.number} {guess.name} {guess.correct ? '✓' : '✗'}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="hint-section panel">
@@ -424,17 +562,6 @@ function App() {
           </div>
         </div>
       </div>
-
-      {guesses.length > 0 && (
-        <div className="guess-grid">
-          <img src={guessLogo} alt="Guesses" className="guess-logo" />
-          {guesses.map((guess, index) => (
-            <div key={index} className={`guess-card ${guess.correct ? 'correct' : 'incorrect'}`}>
-              #{guess.number} · {guess.name} · {guess.correct ? 'Correct' : 'Incorrect'}
-            </div>
-          ))}
-        </div>
-      )}
 
       {(showSearch || showManualPicker) && (
         <div className="search-overlay animate-in">
@@ -479,6 +606,7 @@ function App() {
                       onClick={() => {
                         if (showManualPicker) {
                           setCorrectAnswer(player);
+                          setIsDailyMode(false);
                           setGuesses([]);
                           setRevealedHints([]);
                           setHasWon(false);
@@ -641,19 +769,25 @@ function App() {
       {hasWon && (
         <div className="modal-card accent-success">
           <button onClick={() => setHasWon(false)} className="dismiss-button" aria-label="Close">×</button>
-          <h2>You guessed correctly!</h2>
+          <h2>{isDailyMode ? 'Daily Challenge - Solved!' : 'You guessed correctly!'}</h2>
           <img src={correctAnswer?.silhouette} alt="Player" className="mugshot" />
           <p>{correctAnswer?.name}</p>
           <div className="modal-actions">
-            <button
-              onClick={async () => {
-                setHasWon(false);
-                await startNewRound();
-              }}
-              className="btn btn-primary"
-            >
-              Play Again
-            </button>
+            {isDailyMode ? (
+              <button onClick={handleShareResult} className="btn btn-primary">
+                {shareCopied ? 'Copied!' : 'Share Result'}
+              </button>
+            ) : (
+              <button
+                onClick={async () => {
+                  setHasWon(false);
+                  await startNewRound();
+                }}
+                className="btn btn-primary"
+              >
+                Play Again
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -661,20 +795,78 @@ function App() {
       {hasLost && (
         <div className="modal-card accent-danger">
           <button onClick={() => setHasLost(false)} className="dismiss-button" aria-label="Close">×</button>
-          <h2>You ran out of guesses!</h2>
+          <h2>{isDailyMode ? 'Daily Challenge - Missed It' : 'You ran out of guesses!'}</h2>
           <img src={correctAnswer?.silhouette} alt="Player" className="mugshot" />
           <p>The answer was <strong>{correctAnswer?.name}</strong></p>
           <div className="modal-actions">
-            <button
-              onClick={async () => {
-                setHasLost(false);
-                await startNewRound();
-              }}
-              className="btn btn-primary"
-            >
-              Play Again
+            {isDailyMode ? (
+              <button onClick={handleShareResult} className="btn btn-primary">
+                {shareCopied ? 'Copied!' : 'Share Result'}
+              </button>
+            ) : (
+              <button
+                onClick={async () => {
+                  setHasLost(false);
+                  await startNewRound();
+                }}
+                className="btn btn-primary"
+              >
+                Play Again
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showDailyResult && dailyRecord && (
+        <div className="modal-card accent-daily">
+          <button onClick={() => setShowDailyResult(false)} className="dismiss-button" aria-label="Close">×</button>
+          <h2>Daily Challenge</h2>
+          <p>
+            {dailyRecord.won
+              ? `You solved it in ${dailyRecord.guesses.length}/3 guesses!`
+              : "You didn't get it this time."}
+          </p>
+          {dailyRecord.playerName && (
+            <p>Answer: <strong>{dailyRecord.playerName}</strong></p>
+          )}
+          <div className="share-grid">
+            {dailyRecord.guesses.map((g, i) => (
+              <span key={i}>{g.correct ? '🟩' : '🟥'}</span>
+            ))}
+          </div>
+          <div className="modal-actions">
+            <button onClick={handleShareResult} className="btn btn-primary">
+              {shareCopied ? 'Copied!' : 'Share Result'}
             </button>
           </div>
+          <p className="daily-next">Come back tomorrow for a new challenge!</p>
+        </div>
+      )}
+
+      {showStats && (
+        <div className="modal-card">
+          <button onClick={() => setShowStats(false)} className="dismiss-button" aria-label="Close">×</button>
+          <h2>Your Stats</h2>
+          <div className="stats-grid">
+            <div className="stat-box">
+              <span className="stat-value">{stats.totalPlayed}</span>
+              <span className="stat-label">Played</span>
+            </div>
+            <div className="stat-box">
+              <span className="stat-value">{winPct}%</span>
+              <span className="stat-label">Win Rate</span>
+            </div>
+            <div className="stat-box">
+              <span className="stat-value">{stats.dailyStreak}</span>
+              <span className="stat-label">Daily Streak</span>
+            </div>
+            <div className="stat-box">
+              <span className="stat-value">{stats.maxDailyStreak}</span>
+              <span className="stat-label">Best Streak</span>
+            </div>
+          </div>
+          <p className="daily-next">Stats are saved on this device only.</p>
         </div>
       )}
     </>
