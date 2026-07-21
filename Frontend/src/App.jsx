@@ -114,6 +114,7 @@ function App() {
   const [revealedHints, setRevealedHints] = useState([]);
   const [hasWon, setHasWon] = useState(false);
   const [hasLost, setHasLost] = useState(false);
+  const [gaveUp, setGaveUp] = useState(false);
   const [showManualPicker, setShowManualPicker] = useState(false);
   const [showWelcomePopup, setShowWelcomePopup] = useState(true);
   const [showFilter, setShowFilter] = useState(false);
@@ -168,6 +169,7 @@ function App() {
     setGuesses([]);
     setHasWon(false);
     setHasLost(false);
+    setGaveUp(false);
     setRevealedHints([]);
   };
 
@@ -192,6 +194,7 @@ function App() {
     setRevealedHints([]);
     setHasWon(false);
     setHasLost(false);
+    setGaveUp(false);
   };
 
   const handleShareResult = async () => {
@@ -310,6 +313,23 @@ function App() {
     ));
   };
 
+  // Shared by any path that ends a round (a deciding guess or a give-up) -
+  // records the daily result/share data if this was a daily round, or just
+  // rolls the outcome into lifetime stats otherwise.
+  const finishRound = (won, finalGuesses) => {
+    if (isDailyMode && correctAnswer?.dailyDate) {
+      const record = recordDailyResult({
+        dateStr: correctAnswer.dailyDate,
+        won,
+        guesses: finalGuesses
+      });
+      setDailyRecord({ ...record, playerName: correctAnswer.name });
+    } else {
+      updateAggregateStats({ won, isDaily: false });
+    }
+    refreshStats();
+  };
+
   const handleGuess = (player) => {
     if (!player || guesses.length >= 3 || hasWon || hasLost) return;
 
@@ -330,19 +350,14 @@ function App() {
     if (won) setHasWon(true);
     else if (lost) setHasLost(true);
 
-    if (won || lost) {
-      if (isDailyMode && correctAnswer?.dailyDate) {
-        const record = recordDailyResult({
-          dateStr: correctAnswer.dailyDate,
-          won,
-          guesses: updatedGuesses
-        });
-        setDailyRecord({ ...record, playerName: correctAnswer.name });
-      } else {
-        updateAggregateStats({ won, isDaily: false });
-      }
-      refreshStats();
-    }
+    if (won || lost) finishRound(won, updatedGuesses);
+  };
+
+  const handleGiveUp = () => {
+    if (!correctAnswer || hasWon || hasLost || guesses.length >= 3 || anyRoundLoading) return;
+    setGaveUp(true);
+    setHasLost(true);
+    finishRound(false, guesses);
   };
 
   // Shared by the dropdown's Select button and Enter-key submission - picks
@@ -356,6 +371,7 @@ function App() {
       setRevealedHints([]);
       setHasWon(false);
       setHasLost(false);
+      setGaveUp(false);
       setShowManualPicker(false);
     } else {
       handleGuess(player);
@@ -529,6 +545,9 @@ function App() {
 
             <button className="btn btn-ghost" onClick={() => setShowManualPicker(true)}>
               Set a custom player instead
+            </button>
+            <button className="btn btn-ghost" onClick={handleGiveUp} disabled={guessDisabled}>
+              Give Up
             </button>
           </div>
 
@@ -802,7 +821,11 @@ function App() {
       {hasLost && (
         <div className="modal-card accent-danger">
           <button onClick={() => setHasLost(false)} className="dismiss-button" aria-label="Close">×</button>
-          <h2>{isDailyMode ? 'Daily Challenge - Missed It' : 'You ran out of guesses!'}</h2>
+          <h2>
+            {isDailyMode
+              ? 'Daily Challenge - Missed It'
+              : gaveUp ? 'You gave up!' : 'You ran out of guesses!'}
+          </h2>
           <img src={correctAnswer?.silhouette} alt="Player" className="mugshot" />
           <p>The answer was <strong>{correctAnswer?.name}</strong></p>
           <div className="modal-actions">
