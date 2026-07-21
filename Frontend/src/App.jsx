@@ -345,6 +345,24 @@ function App() {
     }
   };
 
+  // Shared by the dropdown's Select button and Enter-key submission - picks
+  // `player` as either the custom-player answer or a guess, whichever
+  // overlay is open.
+  const selectSearchResult = (player) => {
+    if (showManualPicker) {
+      setCorrectAnswer(player);
+      setIsDailyMode(false);
+      setGuesses([]);
+      setRevealedHints([]);
+      setHasWon(false);
+      setHasLost(false);
+      setShowManualPicker(false);
+    } else {
+      handleGuess(player);
+    }
+    setQuery('');
+  };
+
   const closeAllOverlays = () => {
     setShowSearch(false);
     setShowManualPicker(false);
@@ -592,6 +610,11 @@ function App() {
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && results.length > 0) {
+                  selectSearchResult(results[0]);
+                }
+              }}
             />
           </div>
 
@@ -601,23 +624,7 @@ function App() {
                 results.map((player) => (
                   <div key={player.id} className="dropdown-item">
                     <span>{player.name}</span>
-                    <button
-                      className="select-button"
-                      onClick={() => {
-                        if (showManualPicker) {
-                          setCorrectAnswer(player);
-                          setIsDailyMode(false);
-                          setGuesses([]);
-                          setRevealedHints([]);
-                          setHasWon(false);
-                          setHasLost(false);
-                          setShowManualPicker(false);
-                        } else {
-                          handleGuess(player);
-                        }
-                        setQuery('');
-                      }}
-                    >
+                    <button className="select-button" onClick={() => selectSearchResult(player)}>
                       Select
                     </button>
                   </div>
