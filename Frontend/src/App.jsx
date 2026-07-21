@@ -546,7 +546,7 @@ function App() {
             <button className="btn btn-ghost" onClick={() => setShowManualPicker(true)}>
               Set a custom player instead
             </button>
-            <button className="btn btn-ghost" onClick={handleGiveUp} disabled={guessDisabled}>
+            <button className="btn btn-danger" onClick={handleGiveUp} disabled={guessDisabled}>
               Give Up
             </button>
           </div>
