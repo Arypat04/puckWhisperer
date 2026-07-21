@@ -177,8 +177,11 @@ export function extractTeams(seasons, teamMapById, teamMapByName) {
     const endYear = parseInt(seasonStr.slice(4));
     const normalizedName = originalTeamName.toLowerCase().trim();
 
+    const fallbackAbbrev = FRANCHISE_LOGO_MAP[teamId] || '';
     const mapped = teamMapById[teamId] || teamMapByName[normalizedName] || {
-      teamId: teamId || '', teamAbbrev: '', teamLogo: FRANCHISE_LOGO_MAP[teamId] || ''
+      teamId: teamId || '',
+      teamAbbrev: fallbackAbbrev,
+      teamLogo: fallbackAbbrev ? `https://assets.nhle.com/logos/nhl/svg/${fallbackAbbrev}_light.svg` : ''
     };
 
     const modernTeamName = ABBREV_TO_TEAM_NAME_MAP[mapped.teamAbbrev] || originalTeamName;
