@@ -335,6 +335,15 @@ body {
   border-color: var(--border-strong);
 }
 
+/* Used standalone (not inside .secondary-actions), so it needs its own
+   flex reset - the inherited `flex: 1` is meant for a flex ROW and would
+   otherwise stretch this button vertically inside .buttons-section's
+   flex COLUMN. */
+.custom-player-btn {
+  flex: none;
+  width: auto;
+}
+
 .btn-secondary:hover:not(:disabled) {
   border-color: var(--accent);
   color: var(--accent-hover);

@@ -95,6 +95,20 @@ function hashString(str) {
   return hash;
 }
 
+// The daily challenge rotates at midnight US Eastern (not UTC), since
+// that's the NHL's home timezone and the reference point most players
+// would actually recognize as "midnight." Uses the IANA zone (not a fixed
+// UTC offset) so DST transitions between EST/EDT are handled automatically.
+const easternDateFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/New_York',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit'
+});
+function getEasternDateString() {
+  return easternDateFormatter.format(new Date());
+}
+
 // Recognizable-only pool for the daily challenge - current NHL players are
 // the players casual fans are most likely to actually know, so the daily
 // draws only from them rather than the full historical roster. The games
@@ -182,7 +196,7 @@ app.get('/api/players/random', checkDB, async (req, res) => {
 
 app.get('/api/players/daily', checkDB, async (req, res) => {
   try {
-    const dailyDate = new Date().toISOString().slice(0, 10);
+    const dailyDate = getEasternDateString();
 
     // The day's pick is cached in `dailyPicks` the first time anyone asks
     // for it, so a mid-day roster update (a player added/removed from

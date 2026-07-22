@@ -541,10 +541,11 @@ function App() {
               <button className="btn btn-secondary" onClick={() => setShowFilter(true)}>
                 Filters{getActiveFilterCount() > 0 && ` (${getActiveFilterCount()})`}
               </button>
-              <button className="btn btn-secondary" onClick={() => setShowManualPicker(true)}>
-                Custom Player
-              </button>
             </div>
+
+            <button className="btn btn-secondary custom-player-btn" onClick={() => setShowManualPicker(true)}>
+              Custom Player
+            </button>
 
             <button className="btn btn-danger" onClick={handleGiveUp} disabled={guessDisabled}>
               Give Up
