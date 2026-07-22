@@ -34,6 +34,8 @@ npm-debug.log*
 .env.development.local
 .env.test.local
 .env.production.local
+env.yaml
+Backend/env.yaml
 
 # Build outputs
 build/

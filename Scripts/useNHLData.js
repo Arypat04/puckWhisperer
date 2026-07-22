@@ -1,7 +1,7 @@
 // hooks/useNHLData.js - Custom React hooks for NHL data
 import { useState, useEffect, useRef } from 'react';
 
-export const API_BASE_URL = 'https://puckwhisperer-backend.onrender.com/api';
+export const API_BASE_URL = 'https://puckwhisperer-backend-182082656275.us-central1.run.app/api';
 
 // Hook to search players
 export function usePlayerSearch(query) {
