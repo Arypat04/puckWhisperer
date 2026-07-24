@@ -5,7 +5,6 @@ import {
   createRateLimiter,
   runWithConcurrency,
   fetchActiveTeams,
-  buildTeamMaps,
   getDraftTeamInfo,
   extractTeams,
   extractTrophies
@@ -175,8 +174,6 @@ class NHLScraper {
       const activeTeams = await fetchActiveTeams();
       console.log(`Active teams: ${activeTeams.length}`);
 
-      const { teamMapById, teamMapByName } = buildTeamMaps(activeTeams);
-
       const BATCH_SIZE = 50;
       let batchPlayers = [];
       let totalProcessed = 0;
@@ -228,8 +225,8 @@ class NHLScraper {
             const seasons = data.seasonTotals || [];
 
             const silhouette = data.headshot || `https://assets.nhle.com/mugs/nhl/20232024/${playerId}.png`;
-            const draftInfo = getDraftTeamInfo(data.draftDetails);
-            const teamArray = extractTeams(seasons, teamMapById, teamMapByName);
+            const draftInfo = await getDraftTeamInfo(data.draftDetails);
+            const teamArray = await extractTeams(seasons);
             const trophies = extractTrophies(data.awards);
 
             // Only include players who have played for active franchises

@@ -37,6 +37,10 @@ export const ABBREV_TO_TEAM_NAME_MAP = {
   VGK: 'Vegas Golden Knights', SEA: 'Seattle Kraken', UTA: 'Utah Mammoth'
 };
 
+const TEAM_NAME_TO_ABBREV_MAP = Object.fromEntries(
+  Object.entries(ABBREV_TO_TEAM_NAME_MAP).map(([abbrev, name]) => [name, abbrev])
+);
+
 export async function makeRequestWithRetry(url, maxRetries = 3) {
   for (let i = 0; i < maxRetries; i++) {
     try {
@@ -90,53 +94,103 @@ export async function fetchActiveTeams() {
   return data.data.filter(team => team.franchiseId && team.active !== false);
 }
 
-export function buildTeamMaps(activeTeams) {
-  const teamMapById = {};
-  const teamMapByName = {};
+// The NHL's current-team logo CDN (assets.nhle.com/logos/nhl/svg/{ABBREV}_*.svg)
+// only ever serves whatever a franchise looks like today - a player's history
+// with a relocated, renamed, or redesigned team always showed the modern
+// branding. The date-scoped standings API (api-web.nhle.com/v1/standings/{date})
+// is the only NHL endpoint that returns logos matching what a team actually
+// looked like at a given point in time. Cached per date since a single scrape
+// run has heavy overlap in the seasons/dates different players reference.
+const standingsCache = new Map();
 
-  for (const t of activeTeams) {
-    const franchiseId = t.franchiseId;
-    const name = (t.fullName || '').toLowerCase().trim();
-    const abbrev = FRANCHISE_LOGO_MAP[franchiseId] || t.abbreviation || t.teamName?.abbreviation || '';
-    const teamData = {
-      teamId: franchiseId,
-      teamAbbrev: abbrev,
-      teamLogo: `https://assets.nhle.com/logos/nhl/svg/${abbrev}_light.svg`,
-      teamName: t.fullName || ''
-    };
-    teamMapById[franchiseId] = teamData;
-    if (name) teamMapByName[name] = teamData;
+async function fetchStandingsForDate(date) {
+  if (standingsCache.has(date)) return standingsCache.get(date);
+  let standings = [];
+  try {
+    const { data } = await makeRequestWithRetry(`https://api-web.nhle.com/v1/standings/${date}`);
+    standings = data.standings || [];
+  } catch {
+    // Cache the miss too, so an uncovered/bad date isn't retried for every
+    // subsequent player whose tenure references it.
   }
-
-  return { teamMapById, teamMapByName };
+  standingsCache.set(date, standings);
+  return standings;
 }
 
-export function getDraftTeamInfo(draftData) {
+export async function resolveEraTeamIdentityByName(representativeDate, exactTeamName) {
+  const standings = await fetchStandingsForDate(representativeDate);
+  const entry = standings.find(t => t.teamName?.default === exactTeamName);
+  if (!entry) return null;
+  return {
+    teamAbbrev: entry.teamAbbrev?.default || '',
+    teamLogo: entry.teamLogo || '',
+    teamLogoDark: entry.teamLogoDark || ''
+  };
+}
+
+// Same idea, matched by abbreviation instead of name - draft data only gives
+// us the historical abbreviation, not a full team name.
+export async function resolveEraTeamIdentityByAbbrev(representativeDate, abbrev) {
+  const standings = await fetchStandingsForDate(representativeDate);
+  const entry = standings.find(t => t.teamAbbrev?.default === abbrev);
+  if (!entry) return null;
+  return {
+    teamName: entry.teamName?.default || '',
+    teamLogo: entry.teamLogo || '',
+    teamLogoDark: entry.teamLogoDark || ''
+  };
+}
+
+export async function getDraftTeamInfo(draftData) {
   if (!draftData || !draftData.year) {
-    return { year: null, round: null, pick: null, overall: null, team: null, teamAbbrev: null, teamLogo: null };
+    return { year: null, round: null, pick: null, overall: null, team: null, teamAbbrev: null, teamLogo: null, teamLogoDark: null };
   }
 
+  // December, not draft day itself (June) - the standings API has no data
+  // for summer dates outside the season, but a team's identity can't have
+  // changed between the draft and the start of that same season anyway.
+  // Falls back to February of the following year for lockout-delayed
+  // seasons (e.g. 1994-95) where December also has no data yet.
   const originalAbbrev = draftData.teamAbbrev || '';
-  const draftFranchiseId = ABBREV_TO_FRANCHISE_ID_MAP[originalAbbrev] || null;
-
-  // Fall back to the franchise's current abbreviation when the draft-time
-  // abbreviation is for a relocated/renamed team we don't have a name for.
-  let correctAbbrev = originalAbbrev;
-  if (!ABBREV_TO_TEAM_NAME_MAP[originalAbbrev] && draftFranchiseId && FRANCHISE_LOGO_MAP[draftFranchiseId]) {
-    correctAbbrev = FRANCHISE_LOGO_MAP[draftFranchiseId];
+  let resolved = originalAbbrev
+    ? await resolveEraTeamIdentityByAbbrev(`${draftData.year}-12-01`, originalAbbrev)
+    : null;
+  if (!resolved && originalAbbrev) {
+    resolved = await resolveEraTeamIdentityByAbbrev(`${draftData.year + 1}-02-01`, originalAbbrev);
   }
 
-  const teamName = ABBREV_TO_TEAM_NAME_MAP[correctAbbrev] || draftData.teamName || '';
-  const teamLogo = correctAbbrev ? `https://assets.nhle.com/logos/nhl/svg/${correctAbbrev}_light.svg` : null;
+  if (resolved) {
+    return {
+      year: draftData.year,
+      round: draftData.round,
+      pick: draftData.pickInRound,
+      overall: draftData.overallPick,
+      team: resolved.teamName,
+      teamAbbrev: originalAbbrev,
+      teamLogo: resolved.teamLogo,
+      teamLogoDark: resolved.teamLogoDark
+    };
+  }
+
+  // Fall back to the franchise's current identity if the era-accurate lookup
+  // came up empty (e.g. a date outside the standings API's coverage). Only
+  // ever use an abbreviation we can confirm is a real current team - never
+  // the raw original abbrev unverified, since an unrecognized/defunct code
+  // would produce a logo URL that 404s.
+  const draftFranchiseId = ABBREV_TO_FRANCHISE_ID_MAP[originalAbbrev] || null;
+  const fallbackAbbrev = ABBREV_TO_TEAM_NAME_MAP[originalAbbrev]
+    ? originalAbbrev
+    : (draftFranchiseId && FRANCHISE_LOGO_MAP[draftFranchiseId]) || '';
 
   return {
     year: draftData.year,
     round: draftData.round,
     pick: draftData.pickInRound,
     overall: draftData.overallPick,
-    team: teamName,
-    teamAbbrev: correctAbbrev,
-    teamLogo
+    team: ABBREV_TO_TEAM_NAME_MAP[fallbackAbbrev] || draftData.teamName || '',
+    teamAbbrev: fallbackAbbrev,
+    teamLogo: fallbackAbbrev ? `https://assets.nhle.com/logos/nhl/svg/${fallbackAbbrev}_light.svg` : null,
+    teamLogoDark: fallbackAbbrev ? `https://assets.nhle.com/logos/nhl/svg/${fallbackAbbrev}_dark.svg` : null
   };
 }
 
@@ -154,9 +208,13 @@ export function extractTrophies(awardsData) {
 }
 
 // Collapses a player's season-by-season history into per-team tenures,
-// merging consecutive seasons with the same team and flagging the latest
-// tenure as active if it covers this season or last.
-export function extractTeams(seasons, teamMapById, teamMapByName) {
+// merging consecutive seasons under the same *historical* team identity and
+// flagging the latest tenure as active if it covers this season or last.
+// A franchise rename (e.g. Hartford Whalers -> Carolina Hurricanes)
+// intentionally starts a new tenure rather than merging through it, since
+// showing "years played on each team" should reflect the team as it was
+// actually named at the time, not its modern identity.
+export async function extractTeams(seasons) {
   if (!Array.isArray(seasons)) return [];
 
   const currentSeason = new Date().getFullYear();
@@ -175,49 +233,68 @@ export function extractTeams(seasons, teamMapById, teamMapByName) {
 
     const startYear = parseInt(seasonStr.slice(0, 4));
     const endYear = parseInt(seasonStr.slice(4));
-    const normalizedName = originalTeamName.toLowerCase().trim();
 
-    const fallbackAbbrev = FRANCHISE_LOGO_MAP[teamId] || '';
-    const mapped = teamMapById[teamId] || teamMapByName[normalizedName] || {
-      teamId: teamId || '',
-      teamAbbrev: fallbackAbbrev,
-      teamLogo: fallbackAbbrev ? `https://assets.nhle.com/logos/nhl/svg/${fallbackAbbrev}_light.svg` : ''
-    };
-
-    const modernTeamName = ABBREV_TO_TEAM_NAME_MAP[mapped.teamAbbrev] || originalTeamName;
-
-    allSeasons.push({
-      teamName: modernTeamName, teamId: mapped.teamId, teamAbbrev: mapped.teamAbbrev,
-      teamLogo: mapped.teamLogo, startYear, endYear, seasonStr
-    });
+    allSeasons.push({ teamName: originalTeamName, teamId, startYear, endYear });
   }
 
   allSeasons.sort((a, b) => a.startYear - b.startYear);
 
-  const tenures = [];
-  let currentTenure = null;
-
-  const finishTenure = (tenure) => {
-    const isActive = tenure.endYear === currentSeason || tenure.endYear === currentSeason - 1;
-    tenures.push({
-      teamName: tenure.teamName, teamId: tenure.teamId, teamAbbrev: tenure.teamAbbrev,
-      teamLogo: `https://assets.nhle.com/logos/nhl/svg/${tenure.teamAbbrev}_light.svg`,
-      startYear: tenure.startYear, endYear: tenure.endYear, isActive
-    });
-  };
-
+  const rawTenures = [];
+  let current = null;
   for (const season of allSeasons) {
-    const teamKey = `${season.teamId}_${season.teamName}`;
-
-    if (!currentTenure || currentTenure.teamKey !== teamKey) {
-      if (currentTenure) finishTenure(currentTenure);
-      currentTenure = { teamKey, ...season };
+    if (current && current.teamName === season.teamName) {
+      current.endYear = Math.max(current.endYear, season.endYear);
     } else {
-      currentTenure.endYear = Math.max(currentTenure.endYear, season.endYear);
+      if (current) rawTenures.push(current);
+      current = { ...season };
     }
   }
+  if (current) rawTenures.push(current);
 
-  if (currentTenure) finishTenure(currentTenure);
+  const tenures = [];
+  for (const tenure of rawTenures) {
+    const isActive = tenure.endYear === currentSeason || tenure.endYear === currentSeason - 1;
+
+    // An ongoing tenure should show the team's *current* branding (the
+    // relationship is still active today), not whatever it looked like when
+    // the tenure started - a player who's been on the same team since 2015
+    // shouldn't show a logo the team retired years ago. "now" redirects to
+    // the most recent date with real standings data, since a raw date
+    // during the offseason returns nothing. Finished tenures try December
+    // of the start year first (safely inside the season before any
+    // offseason rename could have happened), falling back to February of
+    // the end year for the rare lockout-delayed season (e.g. 1994-95,
+    // which didn't start until mid-January) where December has no data.
+    let resolved = null;
+    if (isActive) {
+      resolved = await resolveEraTeamIdentityByName('now', tenure.teamName);
+    } else {
+      resolved = await resolveEraTeamIdentityByName(`${tenure.startYear}-12-01`, tenure.teamName);
+      if (!resolved) {
+        resolved = await resolveEraTeamIdentityByName(`${tenure.endYear}-02-01`, tenure.teamName);
+      }
+    }
+
+    let teamAbbrev, teamLogo, teamLogoDark;
+    if (resolved) {
+      ({ teamAbbrev, teamLogo, teamLogoDark } = resolved);
+    } else {
+      // Fall back to the franchise's current branding if the era-accurate
+      // lookup came up empty - never leave a tenure with no logo at all.
+      // Raw season data doesn't reliably carry a franchiseId, so this
+      // matches by the team's current name rather than tenure.teamId.
+      const fallbackAbbrev = TEAM_NAME_TO_ABBREV_MAP[tenure.teamName] || '';
+      teamAbbrev = fallbackAbbrev;
+      teamLogo = fallbackAbbrev ? `https://assets.nhle.com/logos/nhl/svg/${fallbackAbbrev}_light.svg` : '';
+      teamLogoDark = fallbackAbbrev ? `https://assets.nhle.com/logos/nhl/svg/${fallbackAbbrev}_dark.svg` : '';
+    }
+
+    tenures.push({
+      teamName: tenure.teamName, teamId: tenure.teamId, teamAbbrev,
+      teamLogo, teamLogoDark,
+      startYear: tenure.startYear, endYear: tenure.endYear, isActive
+    });
+  }
 
   return tenures;
 }

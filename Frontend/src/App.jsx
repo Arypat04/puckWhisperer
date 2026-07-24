@@ -304,7 +304,7 @@ function App() {
     return player.teams.map((team) => (
       <div key={`${player.id}-${team.teamId}-${team.startYear}`} className="team-hint">
         <img
-          src={`https://assets.nhle.com/logos/nhl/svg/${team.teamAbbrev}_dark.svg`}
+          src={team.teamLogoDark || `https://assets.nhle.com/logos/nhl/svg/${team.teamAbbrev}_dark.svg`}
           alt={team.teamName}
           className="team-logo"
         />

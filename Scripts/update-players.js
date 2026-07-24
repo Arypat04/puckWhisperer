@@ -3,8 +3,6 @@ import dotenv from 'dotenv';
 import {
   makeRequestWithRetry,
   runWithConcurrency,
-  fetchActiveTeams,
-  buildTeamMaps,
   getDraftTeamInfo,
   extractTeams,
   extractTrophies
@@ -143,10 +141,6 @@ class NHLUpdater {
   // Update specific players by filter
   async updatePlayersByFilter(filter = {}, maxPlayers = null) {
     try {
-      console.log('Setting up team mappings...');
-      const activeTeams = await fetchActiveTeams();
-      const { teamMapById, teamMapByName } = buildTeamMaps(activeTeams);
-
       const cursor = this.collection.find(filter);
       if (maxPlayers) cursor.limit(maxPlayers);
 
@@ -170,8 +164,8 @@ class NHLUpdater {
           const seasons = data.seasonTotals || [];
 
           const silhouette = data.headshot || `https://assets.nhle.com/mugs/nhl/20232024/${oldPlayer.id}.png`;
-          const draftInfo = getDraftTeamInfo(data.draftDetails);
-          const teamArray = extractTeams(seasons, teamMapById, teamMapByName);
+          const draftInfo = await getDraftTeamInfo(data.draftDetails);
+          const teamArray = await extractTeams(seasons);
           const trophies = extractTrophies(data.awards);
 
           const isActive = !!data.isActive;
