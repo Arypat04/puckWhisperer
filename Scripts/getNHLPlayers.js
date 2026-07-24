@@ -235,9 +235,7 @@ class NHLScraper {
             // Only include players who have played for active franchises
             if (teamArray.length === 0) return { playerId, playerData: null };
 
-            let isActive = false;
-            const latestTeam = teamArray[teamArray.length - 1];
-            if (latestTeam) isActive = latestTeam.isActive;
+            const isActive = !!data.isActive;
 
             const playerData = {
               id: playerId,

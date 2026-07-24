@@ -174,9 +174,7 @@ class NHLUpdater {
           const teamArray = extractTeams(seasons, teamMapById, teamMapByName);
           const trophies = extractTrophies(data.awards);
 
-          let isActive = false;
-          const latestTeam = teamArray[teamArray.length - 1];
-          if (latestTeam) isActive = latestTeam.isActive;
+          const isActive = !!data.isActive;
 
           const newPlayerData = {
             id: oldPlayer.id,
