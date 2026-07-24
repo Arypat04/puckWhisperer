@@ -1,4 +1,4 @@
-# 🏒 [PuckWhisperer](https://puckwhisperer.onrender.com/)
+# 🏒 [PuckWhisperer](https://puckwhisperer.app/)
 
 ![PuckWhisperer Logo](./Frontend/5320889F-C24B-44FF-BA4F-626C46DCAB12.png)
 

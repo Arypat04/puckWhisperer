@@ -304,7 +304,7 @@ function App() {
     return player.teams.map((team) => (
       <div key={`${player.id}-${team.teamId}-${team.startYear}`} className="team-hint">
         <img
-          src={`https://assets.nhle.com/logos/nhl/svg/${team.teamAbbrev}_light.svg`}
+          src={`https://assets.nhle.com/logos/nhl/svg/${team.teamAbbrev}_dark.svg`}
           alt={team.teamName}
           className="team-logo"
         />
@@ -600,6 +600,14 @@ function App() {
           </div>
         </div>
       </div>
+
+      <footer className="site-footer">
+        <p>
+          PuckWhisperer is not affiliated or associated in any way with the National Hockey League.
+          Use of any logos on this website does not constitute a sponsorship or endorsement by the
+          teams, league, or trademark holders.
+        </p>
+      </footer>
 
       {(showSearch || showManualPicker) && (
         <div className="search-overlay animate-in">
