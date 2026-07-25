@@ -523,6 +523,17 @@ body {
   border-bottom: none;
 }
 
+.dropdown-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dropdown-item-years {
+  font-size: clamp(0.65rem, 0.85vw, 0.75rem);
+  color: var(--text-secondary);
+}
+
 .dropdown-empty {
   padding: var(--space-3);
   color: var(--text-muted);

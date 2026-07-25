@@ -48,6 +48,52 @@ const MODE_FILTER_KEYS = [...new Set(GAME_MODES.flatMap(m => Object.keys(m.filte
 const POSITION_LABELS = { L: 'LW', R: 'RW' };
 const formatPosition = (code) => POSITION_LABELS[code] || code || 'N/A';
 
+// birth.country is an ISO 3166-1 alpha-3 code straight from the NHL API.
+// Covers every country that's produced an NHL player historically; an
+// unmapped code just falls back to showing the raw code with no flag.
+const COUNTRY_MAP = {
+  CAN: ['Canada', '🇨🇦'], USA: ['United States', '🇺🇸'], RUS: ['Russia', '🇷🇺'],
+  SWE: ['Sweden', '🇸🇪'], FIN: ['Finland', '🇫🇮'], CZE: ['Czechia', '🇨🇿'],
+  SVK: ['Slovakia', '🇸🇰'], CHE: ['Switzerland', '🇨🇭'], DEU: ['Germany', '🇩🇪'],
+  DNK: ['Denmark', '🇩🇰'], NOR: ['Norway', '🇳🇴'], AUT: ['Austria', '🇦🇹'],
+  LVA: ['Latvia', '🇱🇻'], SVN: ['Slovenia', '🇸🇮'], FRA: ['France', '🇫🇷'],
+  GBR: ['United Kingdom', '🇬🇧'], JPN: ['Japan', '🇯🇵'], KAZ: ['Kazakhstan', '🇰🇿'],
+  BLR: ['Belarus', '🇧🇾'], UKR: ['Ukraine', '🇺🇦'], ITA: ['Italy', '🇮🇹'],
+  POL: ['Poland', '🇵🇱'], HUN: ['Hungary', '🇭🇺'], AUS: ['Australia', '🇦🇺'],
+  NZL: ['New Zealand', '🇳🇿'], KOR: ['South Korea', '🇰🇷'], CHN: ['China', '🇨🇳'],
+  BIH: ['Bosnia and Herzegovina', '🇧🇦'], EST: ['Estonia', '🇪🇪'], LTU: ['Lithuania', '🇱🇹'],
+  NLD: ['Netherlands', '🇳🇱'], BEL: ['Belgium', '🇧🇪'], ESP: ['Spain', '🇪🇸'],
+  BRA: ['Brazil', '🇧🇷'], MEX: ['Mexico', '🇲🇽'], JAM: ['Jamaica', '🇯🇲'],
+  ZAF: ['South Africa', '🇿🇦'], IRL: ['Ireland', '🇮🇪'], HRV: ['Croatia', '🇭🇷'],
+  SRB: ['Serbia', '🇷🇸'], ROU: ['Romania', '🇷🇴'], BGR: ['Bulgaria', '🇧🇬'],
+  ISL: ['Iceland', '🇮🇸'], THA: ['Thailand', '🇹🇭'], IND: ['India', '🇮🇳'],
+  NGA: ['Nigeria', '🇳🇬'], TWN: ['Taiwan', '🇹🇼'], HKG: ['Hong Kong', '🇭🇰'],
+  ARE: ['United Arab Emirates', '🇦🇪'], VEN: ['Venezuela', '🇻🇪'], COL: ['Colombia', '🇨🇴'],
+  ARG: ['Argentina', '🇦🇷'], CHL: ['Chile', '🇨🇱'], PRI: ['Puerto Rico', '🇵🇷'],
+  TTO: ['Trinidad and Tobago', '🇹🇹'], LBN: ['Lebanon', '🇱🇧'], ISR: ['Israel', '🇮🇱'],
+  BHR: ['Bahrain', '🇧🇭'], BHS: ['Bahamas', '🇧🇸'], HTI: ['Haiti', '🇭🇹'],
+  IDN: ['Indonesia', '🇮🇩'], PRY: ['Paraguay', '🇵🇾'], TZA: ['Tanzania', '🇹🇿'],
+  UZB: ['Uzbekistan', '🇺🇿']
+};
+const formatNationality = (player) => {
+  const birth = player?.birth;
+  if (!birth?.country) return 'Unknown';
+  const entry = COUNTRY_MAP[birth.country];
+  const countryLabel = entry ? entry[0] : birth.country;
+  const locality = [birth.city, birth.stateProvince].filter(Boolean).join(', ');
+  return locality ? `${locality}, ${countryLabel}` : countryLabel;
+};
+
+// Career span used to tell same-named players apart in the guess dropdown -
+// a start/end year range gives enough context to disambiguate without
+// revealing which team(s) a player is on, unlike showing team/position would.
+const getCareerSpan = (player) => {
+  if (!player?.teams || player.teams.length === 0) return null;
+  const startYear = player.teams[0].startYear;
+  const lastTeam = player.teams[player.teams.length - 1];
+  return `${startYear} - ${lastTeam.isActive ? 'Active' : lastTeam.endYear}`;
+};
+
 // Generic fallback icon, used only if a trophy name doesn't match any real
 // photo below (e.g. a new award the NHL API starts returning).
 function TrophyIcon({ className }) {
@@ -308,7 +354,7 @@ function App() {
           alt={team.teamName}
           className="team-logo"
         />
-        {revealedHints.includes(1) && <p className="team-years">{team.startYear} - {team.endYear}</p>}
+        <p className="team-years">{team.startYear} - {team.endYear}</p>
       </div>
     ));
   };
@@ -439,10 +485,11 @@ function App() {
             <h3>How to Play</h3>
             <ul>
               <li>Guess the mystery NHL player in 3 tries or less</li>
+              <li>Years played on each team are shown from the start</li>
               <li>Hints unlock in order (1 → 5)</li>
-              <li>Hint 1: Years played on each team</li>
-              <li>Hint 2: Draft info</li>
-              <li>Hint 3: Jersey # and position</li>
+              <li>Hint 1: Draft info</li>
+              <li>Hint 2: Jersey # and position</li>
+              <li>Hint 3: Nationality</li>
               <li>Hint 4: Player stats and trophies</li>
               <li>Hint 5: Silhouette</li>
               <li>Starts on Active Players - use the mode buttons up top to try Hall of Famers, Award Winners, or Hard mode (every player ever)</li>
@@ -582,14 +629,17 @@ function App() {
         <div className="hint-section panel">
           <img src={hintLogo} className="hint-logo" alt="Hints" />
           <div className="hint-block-container">
-            {!revealedHints.includes(2) && !revealedHints.includes(3) && !revealedHints.includes(4) && (
+            {!revealedHints.includes(1) && !revealedHints.includes(2) && !revealedHints.includes(3) && !revealedHints.includes(4) && (
               <p className="hint-block-empty">Unlock hints below to see clues here</p>
             )}
-            {revealedHints.includes(2) && <div className="hint-block">{getDraftInfo(correctAnswer)}</div>}
-            {revealedHints.includes(3) && (
+            {revealedHints.includes(1) && <div className="hint-block">{getDraftInfo(correctAnswer)}</div>}
+            {revealedHints.includes(2) && (
               <div className="hint-block">
                 Jersey #: {correctAnswer?.sweaterNumber || 'N/A'} · Position: {formatPosition(correctAnswer?.position)}
               </div>
+            )}
+            {revealedHints.includes(3) && (
+              <div className="hint-block">Nationality: {formatNationality(correctAnswer)}</div>
             )}
             {revealedHints.includes(4) && (
               <>
@@ -651,7 +701,12 @@ function App() {
               {results.length > 0 ? (
                 results.map((player) => (
                   <div key={player.id} className="dropdown-item">
-                    <span>{player.name}</span>
+                    <div className="dropdown-item-info">
+                      <span className="dropdown-item-name">{player.name}</span>
+                      {getCareerSpan(player) && (
+                        <span className="dropdown-item-years">{getCareerSpan(player)}</span>
+                      )}
+                    </div>
                     <button className="select-button" onClick={() => selectSearchResult(player)}>
                       Select
                     </button>

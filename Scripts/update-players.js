@@ -5,7 +5,8 @@ import {
   runWithConcurrency,
   getDraftTeamInfo,
   extractTeams,
-  extractTrophies
+  extractTrophies,
+  getBirthInfo
 } from './nhlShared.js';
 
 // How many player-landing requests to have in flight at once. Empirically
@@ -127,6 +128,9 @@ class NHLUpdater {
     if (!!oldPlayer.hallOfFame !== !!newPlayer.hallOfFame) {
       changes.push(`Hall of Fame: ${!!oldPlayer.hallOfFame} → ${!!newPlayer.hallOfFame}`);
     }
+    if ((oldPlayer.birth?.country || null) !== (newPlayer.birth?.country || null)) {
+      changes.push(`Birth country: "${oldPlayer.birth?.country || 'N/A'}" → "${newPlayer.birth?.country || 'N/A'}"`);
+    }
     if (!!oldPlayer.topAllTime !== !!newPlayer.topAllTime) {
       changes.push(`Top 100 All-Time: ${!!oldPlayer.topAllTime} → ${!!newPlayer.topAllTime}`);
     }
@@ -167,6 +171,7 @@ class NHLUpdater {
           const draftInfo = await getDraftTeamInfo(data.draftDetails);
           const teamArray = await extractTeams(seasons);
           const trophies = extractTrophies(data.awards);
+          const birth = getBirthInfo(data);
 
           const isActive = !!data.isActive;
 
@@ -180,6 +185,7 @@ class NHLUpdater {
             teams: teamArray,
             isActive,
             trophies,
+            birth,
             hallOfFame: !!data.inHHOF,
             topAllTime: !!data.inTop100AllTime,
             stats: position === 'G' ? {

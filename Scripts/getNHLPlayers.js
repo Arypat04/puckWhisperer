@@ -7,7 +7,8 @@ import {
   fetchActiveTeams,
   getDraftTeamInfo,
   extractTeams,
-  extractTrophies
+  extractTrophies,
+  getBirthInfo
 } from './nhlShared.js';
 
 // How many player-landing requests to have in flight at once. Empirically
@@ -228,6 +229,7 @@ class NHLScraper {
             const draftInfo = await getDraftTeamInfo(data.draftDetails);
             const teamArray = await extractTeams(seasons);
             const trophies = extractTrophies(data.awards);
+            const birth = getBirthInfo(data);
 
             // Only include players who have played for active franchises
             if (teamArray.length === 0) return { playerId, playerData: null };
@@ -244,6 +246,7 @@ class NHLScraper {
               teams: teamArray,
               isActive,
               trophies,
+              birth,
               hallOfFame: !!data.inHHOF,
               topAllTime: !!data.inTop100AllTime,
 

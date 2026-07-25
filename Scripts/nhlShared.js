@@ -194,6 +194,17 @@ export async function getDraftTeamInfo(draftData) {
   };
 }
 
+// Pulled straight from the landing API's raw fields - birthCountry is an
+// ISO 3166-1 alpha-3 code (e.g. "CAN", "SWE"); the frontend maps it to a
+// display name and flag.
+export function getBirthInfo(data) {
+  return {
+    city: data.birthCity?.default || null,
+    stateProvince: data.birthStateProvince?.default || null,
+    country: data.birthCountry || null
+  };
+}
+
 // Pulls major end-of-season trophies (Hart, Norris, Vezina, Calder, Art
 // Ross, Conn Smythe, Rocket Richard, Ted Lindsay, Stanley Cup, etc.) from
 // the NHL API's `awards` field. Note: this does NOT include All-Star Game
