@@ -200,8 +200,20 @@ export async function getDraftTeamInfo(draftData) {
 // name searchable with a plain keyboard.
 const COMBINING_DIACRITICS = new RegExp('[\\u0300-\\u036f]', 'g');
 
+// A handful of names in the NHL API are themselves corrupted upstream by a
+// UTF-8-decoded-as-Latin-1 mistake (e.g. "ô" stored as "Ã´"). Re-interpreting
+// the string's char codes as Latin-1 bytes and decoding those as UTF-8
+// reverses it - but only do this when the result is clean valid UTF-8 (no
+// replacement characters). A normal, correctly-encoded name produces invalid
+// byte sequences under this reinterpretation and comes back with U+FFFD, so
+// it's left untouched.
+function repairMojibake(str) {
+  const repaired = Buffer.from(str, 'latin1').toString('utf8');
+  return repaired.includes('�') ? str : repaired;
+}
+
 export function stripDiacritics(str) {
-  return str.normalize('NFD').replace(COMBINING_DIACRITICS, '').replace(/\s+/g, ' ');
+  return repairMojibake(str).normalize('NFD').replace(COMBINING_DIACRITICS, '').replace(/\s+/g, ' ');
 }
 
 // Pulled straight from the landing API's raw fields - birthCountry is an
