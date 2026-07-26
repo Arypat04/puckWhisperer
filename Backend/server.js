@@ -60,8 +60,11 @@ const checkDB = (req, res, next) => {
   next();
 };
 
-// Minimum-value filters (Career Stats section on the frontend)
-const MINIMUM_STAT_FIELDS = ['stats.games', 'stats.goals', 'stats.assists', 'stats.points'];
+// Minimum-value filters (Career Stats section on the frontend, plus the
+// Milestones game-mode presets). stats.wins only exists on goalie docs, so
+// pairing it with position=G in a mode's filters is what scopes that mode
+// to goalies - this field alone doesn't need to know that.
+const MINIMUM_STAT_FIELDS = ['stats.games', 'stats.goals', 'stats.assists', 'stats.points', 'stats.wins'];
 // Exact-match numeric filters
 const EXACT_NUMERIC_FIELDS = ['sweaterNumber', 'draft.year', 'draft.round'];
 // Game Mode presets: boolean fields, sent as the string "true"/"false".
@@ -135,8 +138,25 @@ function buildPlayerQuery(query) {
     filter[field] = raw === 'true';
   }
 
+  // The Stanley Cup is a team award, not an individual one - "Award Winners"
+  // means the player has at least one non-Cup trophy (Hart, Norris, etc.), so
+  // a depth player who only happened to be on a winning roster doesn't
+  // qualify. Cup wins get their own separate mode below.
   if (query.hasAwards === 'true') {
-    filter['trophies.0'] = { $exists: true };
+    filter.trophies = { $elemMatch: { name: { $ne: 'Stanley Cup' } } };
+  }
+
+  if (query.hasCup === 'true') {
+    filter['trophies.name'] = 'Stanley Cup';
+  }
+
+  // Sits between "Active Players" (only currently playing) and the
+  // historical/prestige modes (which reach all the way back to 1917) -
+  // anyone whose career touched the last 15 years, so recently-retired
+  // stars count too, not just players on a roster right now.
+  if (query.modernEra === 'true') {
+    const currentYear = new Date().getFullYear();
+    filter['teams.endYear'] = { $gte: currentYear - 15 };
   }
 
   for (const field of MINIMUM_STAT_FIELDS) {

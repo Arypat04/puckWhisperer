@@ -959,16 +959,74 @@ svg.trophy-icon {
   letter-spacing: 0.04em;
 }
 
-.mode-bar {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-2);
-  /* Wide enough to fit all 5 mode buttons on one row on typical laptop/
-     desktop widths (>=~1050px) - a wrapped second row was one of the
-     biggest contributors to pushing the game panel below the fold. */
-  max-width: clamp(320px, 72vw, 760px);
+/* Replaces the old always-visible row of mode buttons - with 13+ modes
+   across three groups, a single pill that opens a picker modal scales much
+   better than a wrapping button row that keeps pushing the game panel
+   further down the page as modes are added. */
+.mode-pill {
+  display: block;
   margin: 0 auto;
+  padding: clamp(6px, 1vh, 9px) clamp(1rem, 2.6vw, 1.6rem);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full, 999px);
+  background: var(--surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: clamp(0.78rem, 1.05vw, 0.9rem);
+  transition: all 0.2s ease;
+}
+
+.mode-pill:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent-hover);
+}
+
+.mode-pill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mode-picker-overlay {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  padding: var(--space-4);
+  max-width: 90vw;
+  max-height: 85vh;
+  width: clamp(400px, 60vw, 680px);
+  overflow-y: auto;
+  text-align: left;
+}
+
+.mode-picker-overlay h3 {
+  margin: 0 0 var(--space-3);
+  color: var(--text-primary);
+}
+
+.mode-group {
+  margin-bottom: var(--space-3);
+}
+
+.mode-group h4 {
+  color: var(--accent-hover);
+  margin: 0 0 var(--space-2);
+  font-size: clamp(0.85rem, 1.4vw, 1rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mode-group-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-2);
 }
 
 .mode-description {
@@ -1190,12 +1248,17 @@ svg.trophy-icon {
     height: clamp(130px, 22vh, 150px);
   }
 
-  .mode-bar {
-    max-width: 100%;
-  }
-
   .mode-button {
     min-width: clamp(90px, 40vw, 150px);
+  }
+
+  .mode-picker-overlay {
+    width: 95vw;
+    max-height: 88vh;
+  }
+
+  .mode-group-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   }
 
   .secondary-actions {

@@ -34,13 +34,29 @@ const EMPTY_FILTERS = {
 // All-Star Game selections anywhere, so this is the closest real proxy.
 const GAME_MODES = [
   { key: 'active', label: 'Active Players', hint: 'Only current NHL players.', filters: { isActive: 'true' } },
+  { key: 'modern', label: 'Modern Era', hint: 'Played sometime in the last 15 years - active players plus recently retired ones.', filters: { modernEra: 'true' } },
   { key: 'all', label: 'All Players', hint: 'Hard mode - includes retired players too.', filters: {} },
-  { key: 'awards', label: 'Award Winners', hint: 'Has won a major NHL trophy (Hart, Norris, Vezina, Calder, etc).', filters: { hasAwards: 'true' } },
+  { key: 'awards', label: 'Award Winners', hint: 'Has won an individual NHL trophy (Hart, Norris, Vezina, Calder, etc) - not counting the Stanley Cup.', filters: { hasAwards: 'true' } },
+  { key: 'cup', label: 'The Cup', hint: 'Has won the Stanley Cup.', filters: { hasCup: 'true' } },
   { key: 'hof', label: 'Hall of Famers', hint: 'Inducted into the Hockey Hall of Fame.', filters: { hallOfFame: 'true' } },
-  { key: 'legends', label: 'Legends', hint: 'NHL’s official Top 100 All-Time list.', filters: { topAllTime: 'true' } }
+  { key: 'legends', label: 'Legends', hint: 'NHL’s official Top 100 All-Time list.', filters: { topAllTime: 'true' } },
+  { key: 'games100', label: '100+ Games', hint: 'Played at least 100 career games - filters out one-game call-ups.', filters: { 'stats.games': '100' } },
+  { key: 'games500', label: '500+ Games', hint: 'A real NHL career - at least 500 games played.', filters: { 'stats.games': '500' } },
+  { key: 'games1000', label: '1,000+ Games', hint: 'Ironman territory - at least 1,000 career games.', filters: { 'stats.games': '1000' } },
+  { key: 'goals500', label: '500 Goal Club', hint: 'One of hockey’s classic scoring milestones - at least 500 career goals.', filters: { 'stats.goals': '500' } },
+  { key: 'points1000', label: '1,000 Point Club', hint: 'A legendary offensive milestone - at least 1,000 career points.', filters: { 'stats.points': '1000' } },
+  { key: 'goalieWins300', label: '300+ Goalie Wins', hint: 'Elite winning goaltenders only - at least 300 career wins.', filters: { position: 'G', 'stats.wins': '300' } }
 ];
 // Derived (not hand-maintained) so it can never drift from GAME_MODES.
 const MODE_FILTER_KEYS = [...new Set(GAME_MODES.flatMap(m => Object.keys(m.filters)))];
+
+// Groups modes for the mode-picker modal. Every GAME_MODES key must appear
+// in exactly one group here.
+const MODE_GROUPS = [
+  { title: 'Difficulty', keys: ['active', 'modern', 'all'] },
+  { title: 'Achievements', keys: ['awards', 'cup', 'hof', 'legends'] },
+  { title: 'Milestones', keys: ['games100', 'games500', 'games1000', 'goals500', 'points1000', 'goalieWins300'] }
+];
 
 // Player data stores positions as the NHL API's raw single-letter codes.
 // Displayed to players as the full skater abbreviation instead (RW/LW read
@@ -164,6 +180,7 @@ function App() {
   const [showManualPicker, setShowManualPicker] = useState(false);
   const [showWelcomePopup, setShowWelcomePopup] = useState(true);
   const [showFilter, setShowFilter] = useState(false);
+  const [showModePicker, setShowModePicker] = useState(false);
 
   const [mode, setMode] = useState(GAME_MODES[0].key);
   const [filters, setFilters] = useState(GAME_MODES[0].filters);
@@ -431,13 +448,14 @@ function App() {
     setQuery('');
     setShowWelcomePopup(false);
     setShowFilter(false);
+    setShowModePicker(false);
     setHasWon(false);
     setHasLost(false);
     setShowDailyResult(false);
     setShowStats(false);
   };
 
-  const anyOverlayOpen = showSearch || showManualPicker || showWelcomePopup || showFilter || hasWon || hasLost || showDailyResult || showStats;
+  const anyOverlayOpen = showSearch || showManualPicker || showWelcomePopup || showFilter || showModePicker || hasWon || hasLost || showDailyResult || showStats;
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -448,6 +466,7 @@ function App() {
         setQuery('');
       } else if (showWelcomePopup) setShowWelcomePopup(false);
       else if (showFilter) setShowFilter(false);
+      else if (showModePicker) setShowModePicker(false);
       else if (hasWon) setHasWon(false);
       else if (hasLost) setHasLost(false);
       else if (showDailyResult) setShowDailyResult(false);
@@ -458,7 +477,7 @@ function App() {
       window.addEventListener('keydown', handleKeyDown);
     }
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [anyOverlayOpen, showSearch, showManualPicker, showWelcomePopup, showFilter, hasWon, hasLost, showDailyResult, showStats]);
+  }, [anyOverlayOpen, showSearch, showManualPicker, showWelcomePopup, showFilter, showModePicker, hasWon, hasLost, showDailyResult, showStats]);
 
   const getActiveFilterCount = () => Object.keys(filters).filter(k => !MODE_FILTER_KEYS.includes(k)).length;
 
@@ -492,7 +511,7 @@ function App() {
               <li>Hint 3: Nationality</li>
               <li>Hint 4: Player stats and trophies</li>
               <li>Hint 5: Silhouette</li>
-              <li>Starts on Active Players - use the mode buttons up top to try Hall of Famers, Award Winners, or Hard mode (every player ever)</li>
+              <li>Starts on Active Players - tap the Mode pill up top to try Hall of Famers, Award Winners, milestone clubs, or Hard mode (every player ever)</li>
             </ul>
           </div>
         </div>
@@ -533,19 +552,13 @@ function App() {
           : anyRoundLoading ? 'Loading…' : '🗓 Daily Challenge'}
       </button>
 
-      <div className="mode-bar">
-        {GAME_MODES.map((m) => (
-          <button
-            key={m.key}
-            className={`mode-button ${mode === m.key ? 'selected' : ''}`}
-            onClick={() => selectMode(m.key)}
-            disabled={anyRoundLoading}
-            title={m.hint}
-          >
-            {m.label}
-          </button>
-        ))}
-      </div>
+      <button
+        className="mode-pill"
+        onClick={() => setShowModePicker(true)}
+        disabled={anyRoundLoading}
+      >
+        Mode: <strong>{currentModeInfo.label}</strong> ▾
+      </button>
       <p className="mode-description">
         {isDailyMode ? "Daily Challenge - today's puzzle, one try per day." : currentModeInfo.hint}
       </p>
@@ -853,6 +866,34 @@ function App() {
               Apply Filters
             </button>
           </div>
+        </div>
+      )}
+
+      {showModePicker && (
+        <div className="mode-picker-overlay animate-in">
+          <button className="dismiss-button" onClick={() => setShowModePicker(false)} aria-label="Close">×</button>
+          <h3>Choose a Game Mode</h3>
+          {MODE_GROUPS.map((group) => (
+            <div key={group.title} className="mode-group">
+              <h4>{group.title}</h4>
+              <div className="mode-group-grid">
+                {group.keys.map((key) => {
+                  const m = GAME_MODES.find((gm) => gm.key === key);
+                  return (
+                    <button
+                      key={m.key}
+                      className={`mode-button ${mode === m.key ? 'selected' : ''}`}
+                      onClick={() => { selectMode(m.key); setShowModePicker(false); }}
+                      disabled={anyRoundLoading}
+                      title={m.hint}
+                    >
+                      {m.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
