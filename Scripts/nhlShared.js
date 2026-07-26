@@ -194,6 +194,16 @@ export async function getDraftTeamInfo(draftData) {
   };
 }
 
+// Player names come back from the NHL API with real diacritics (e.g. "Tim
+// Stützle"), but most users won't type the accented character when
+// searching. Stripping to the closest ASCII equivalent keeps the stored
+// name searchable with a plain keyboard.
+const COMBINING_DIACRITICS = new RegExp('[\\u0300-\\u036f]', 'g');
+
+export function stripDiacritics(str) {
+  return str.normalize('NFD').replace(COMBINING_DIACRITICS, '').replace(/\s+/g, ' ');
+}
+
 // Pulled straight from the landing API's raw fields - birthCountry is an
 // ISO 3166-1 alpha-3 code (e.g. "CAN", "SWE"); the frontend maps it to a
 // display name and flag.

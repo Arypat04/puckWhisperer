@@ -6,7 +6,8 @@ import {
   getDraftTeamInfo,
   extractTeams,
   extractTrophies,
-  getBirthInfo
+  getBirthInfo,
+  stripDiacritics
 } from './nhlShared.js';
 
 // How many player-landing requests to have in flight at once. Empirically
@@ -161,7 +162,7 @@ class NHLUpdater {
           const statsRes = await makeRequestWithRetry(`https://api-web.nhle.com/v1/player/${oldPlayer.id}/landing`);
           const data = statsRes.data;
 
-          const name = `${data.firstName?.default || 'Unknown'} ${data.lastName?.default || ''}`.trim();
+          const name = stripDiacritics(`${data.firstName?.default || 'Unknown'} ${data.lastName?.default || ''}`.trim());
           const sweaterNumber = data.sweaterNumber || 'N/A';
           const position = data.position || 'N/A';
           const career = data.careerTotals?.regularSeason || {};
