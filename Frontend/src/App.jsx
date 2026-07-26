@@ -176,6 +176,12 @@ function App() {
   const [revealedHints, setRevealedHints] = useState([]);
   const [hasWon, setHasWon] = useState(false);
   const [hasLost, setHasLost] = useState(false);
+  // Separate from hasWon/hasLost, which also double as "is the result modal
+  // currently visible" - dismissing that modal (X button, Escape, backdrop
+  // click) used to flip hasWon/hasLost back to false, which re-enabled
+  // Guess/Give Up on a round that was already decided. roundOver stays true
+  // until a new round actually starts, regardless of modal visibility.
+  const [roundOver, setRoundOver] = useState(false);
   const [gaveUp, setGaveUp] = useState(false);
   const [showManualPicker, setShowManualPicker] = useState(false);
   const [showWelcomePopup, setShowWelcomePopup] = useState(true);
@@ -234,6 +240,7 @@ function App() {
     setHasLost(false);
     setGaveUp(false);
     setRevealedHints([]);
+    setRoundOver(false);
   };
 
   const refreshStats = () => setStats(getLifetimeStats());
@@ -258,6 +265,7 @@ function App() {
     setHasWon(false);
     setHasLost(false);
     setGaveUp(false);
+    setRoundOver(false);
   };
 
   const handleShareResult = async () => {
@@ -360,6 +368,22 @@ function App() {
     return `Drafted by ${player.draft.team} (${player.draft.year}, Round ${player.draft.round}, Pick ${player.draft.pick})`;
   };
 
+  // A single-season tenure (e.g. traded away partway through the following
+  // season) shown as "2024 - 2025" reads like a full two-year stay, and
+  // looks like it overlaps with the team they were traded to - which also
+  // starts at "2024" for that same season, since we only track tenures at
+  // season granularity, not exact trade dates. Collapsing it to the single
+  // calendar year the season ends in (e.g. "2025" for the 2024-25 season)
+  // removes that false two-year span while staying in full-year form.
+  // Multi-season tenures keep the full "2018 - 2020" form, which is already
+  // unambiguous.
+  const formatTeamYears = (team) => {
+    if (team.endYear - team.startYear === 1) {
+      return `${team.endYear}`;
+    }
+    return `${team.startYear} - ${team.endYear}`;
+  };
+
   const getTeamLogos = (player) => {
     if (!player || !player.teams || player.teams.length === 0) {
       return <p className="team-empty">No team history yet</p>;
@@ -371,7 +395,7 @@ function App() {
           alt={team.teamName}
           className="team-logo"
         />
-        <p className="team-years">{team.startYear} - {team.endYear}</p>
+        <p className="team-years">{formatTeamYears(team)}</p>
       </div>
     ));
   };
@@ -394,7 +418,7 @@ function App() {
   };
 
   const handleGuess = (player) => {
-    if (!player || guesses.length >= 3 || hasWon || hasLost) return;
+    if (!player || guesses.length >= 3 || roundOver) return;
 
     const isCorrect = player.id === correctAnswer?.id;
     const newGuess = {
@@ -413,13 +437,17 @@ function App() {
     if (won) setHasWon(true);
     else if (lost) setHasLost(true);
 
-    if (won || lost) finishRound(won, updatedGuesses);
+    if (won || lost) {
+      setRoundOver(true);
+      finishRound(won, updatedGuesses);
+    }
   };
 
   const handleGiveUp = () => {
-    if (!correctAnswer || hasWon || hasLost || guesses.length >= 3 || anyRoundLoading) return;
+    if (!correctAnswer || roundOver || guesses.length >= 3 || anyRoundLoading) return;
     setGaveUp(true);
     setHasLost(true);
+    setRoundOver(true);
     finishRound(false, guesses);
   };
 
@@ -435,6 +463,7 @@ function App() {
       setHasWon(false);
       setHasLost(false);
       setGaveUp(false);
+      setRoundOver(false);
       setShowManualPicker(false);
     } else {
       handleGuess(player);
@@ -482,7 +511,7 @@ function App() {
   const getActiveFilterCount = () => Object.keys(filters).filter(k => !MODE_FILTER_KEYS.includes(k)).length;
 
   const anyRoundLoading = randomLoading || dailyLoading;
-  const guessDisabled = hasWon || hasLost || guesses.length >= 3 || !correctAnswer || anyRoundLoading;
+  const guessDisabled = roundOver || guesses.length >= 3 || !correctAnswer || anyRoundLoading;
   const searchTitle = showManualPicker ? 'Choose the Mystery Player' : 'Make Your Guess';
   const currentYear = new Date().getFullYear();
   const trophyChips = revealedHints.includes(4) ? getTrophyChips(correctAnswer) : null;

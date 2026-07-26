@@ -285,8 +285,17 @@ export async function extractTeams(seasons) {
   if (current) rawTenures.push(current);
 
   const tenures = [];
-  for (const tenure of rawTenures) {
-    const isActive = tenure.endYear === currentSeason || tenure.endYear === currentSeason - 1;
+  for (let i = 0; i < rawTenures.length; i++) {
+    const tenure = rawTenures[i];
+    // Only the player's most recent tenure can ever be "active" - checking
+    // endYear proximity alone falsely flagged an earlier, already-closed
+    // tenure as active too whenever a franchise renamed itself partway
+    // through an otherwise-ongoing run (e.g. Utah Hockey Club -> Utah
+    // Mammoth): the old name's tenure has a recent endYear but is not
+    // actually still ongoing, so it needs its own historical resolution
+    // date rather than "now" (which only knows the franchise's current name).
+    const isLastTenure = i === rawTenures.length - 1;
+    const isActive = isLastTenure && (tenure.endYear === currentSeason || tenure.endYear === currentSeason - 1);
 
     // An ongoing tenure should show the team's *current* branding (the
     // relationship is still active today), not whatever it looked like when
