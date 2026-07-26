@@ -368,34 +368,40 @@ function App() {
     return `Drafted by ${player.draft.team} (${player.draft.year}, Round ${player.draft.round}, Pick ${player.draft.pick})`;
   };
 
-  // A single-season tenure (e.g. traded away partway through the following
-  // season) shown as "2024 - 2025" reads like a full two-year stay, and
-  // looks like it overlaps with the team they were traded to - which also
-  // starts at "2024" for that same season, since we only track tenures at
-  // season granularity, not exact trade dates. Collapsing it to the single
-  // calendar year the season ends in (e.g. "2025" for the 2024-25 season)
-  // removes that false two-year span while staying in full-year form.
-  // Multi-season tenures keep the full "2018 - 2020" form, which is already
-  // unambiguous.
-  const formatTeamYears = (team) => {
-    if (team.endYear - team.startYear === 1) {
+  // A tenure's startYear is season-granular, not trade-date-granular: a
+  // player traded away mid-season still has that same season's startYear
+  // on their NEW team's tenure (we only know which season they joined, not
+  // when in it), which reads as if they'd already been on the new team back
+  // when they were still finishing out the season with their old one.
+  // Detect that overlap by checking whether this tenure's startYear is the
+  // same season as the previous tenure's endYear (previousTeam.endYear - 1
+  // === team.startYear) - if so, treat the tenure as effectively starting
+  // the following calendar year instead, same as the old team's tenure
+  // already ends there.
+  const formatTeamYears = (team, previousTeam) => {
+    const effectiveStartYear =
+      previousTeam && team.startYear === previousTeam.endYear - 1
+        ? previousTeam.endYear
+        : team.startYear;
+
+    if (team.endYear - effectiveStartYear <= 1) {
       return `${team.endYear}`;
     }
-    return `${team.startYear} - ${team.endYear}`;
+    return `${effectiveStartYear} - ${team.endYear}`;
   };
 
   const getTeamLogos = (player) => {
     if (!player || !player.teams || player.teams.length === 0) {
       return <p className="team-empty">No team history yet</p>;
     }
-    return player.teams.map((team) => (
+    return player.teams.map((team, index) => (
       <div key={`${player.id}-${team.teamId}-${team.startYear}`} className="team-hint">
         <img
           src={team.teamLogoDark || `https://assets.nhle.com/logos/nhl/svg/${team.teamAbbrev}_dark.svg`}
           alt={team.teamName}
           className="team-logo"
         />
-        <p className="team-years">{formatTeamYears(team)}</p>
+        <p className="team-years">{formatTeamYears(team, player.teams[index - 1])}</p>
       </div>
     ));
   };
