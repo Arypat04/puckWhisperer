@@ -378,13 +378,19 @@ function App() {
   // === team.startYear) - if so, treat the tenure as effectively starting
   // the following calendar year instead, same as the old team's tenure
   // already ends there.
+  //
+  // Whether to collapse to a single year must be based on the RAW season
+  // span (team.endYear - team.startYear), not the adjusted one: a tenure
+  // that's traded-in mid-season and then continues for another full season
+  // (e.g. joined during 2024-25, still there for 2025-26) spans two seasons
+  // and needs to read as "2025 - 2026", not collapse to just "2026" because
+  // the adjustment already absorbed one of those two seasons.
   const formatTeamYears = (team, previousTeam) => {
-    const effectiveStartYear =
-      previousTeam && team.startYear === previousTeam.endYear - 1
-        ? previousTeam.endYear
-        : team.startYear;
+    const isSplitStart = previousTeam && team.startYear === previousTeam.endYear - 1;
+    const effectiveStartYear = isSplitStart ? previousTeam.endYear : team.startYear;
+    const seasonSpan = team.endYear - team.startYear;
 
-    if (team.endYear - effectiveStartYear <= 1) {
+    if (seasonSpan <= 1) {
       return `${team.endYear}`;
     }
     return `${effectiveStartYear} - ${team.endYear}`;
