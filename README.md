@@ -37,6 +37,5 @@ All to find out whether or not you truly know Puck.
 - **Node.js / Express** (for backend API)
 - **Mongo DB** (player database)
 - **Data Collection** (using NHL API)
-- **Deployed with Render**
 
 ---
