@@ -1,12 +1,23 @@
-# React + Vite
+# PuckWhisperer frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The React 19 + Vite app. See the [main README](../README.md) for what the game is, how it fits together and how to run the whole stack.
 
-Currently, two official plugins are available:
+```bash
+npm install
+npm run dev      # http://localhost:5173 (uses the hosted API)
+npm run lint
+npm run build    # outputs to dist/
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Where things are
 
-## Expanding the ESLint configuration
+| File | Purpose |
+| --- | --- |
+| `src/App.jsx` | The game: round state, hints, modes, dialogs and the card layout |
+| `src/App.css` | All styling, driven by the design tokens at the top of the file |
+| `src/dailyStats.js` | Everything saved on the device: daily results, lifetime stats, the round in progress, remembered mode |
+| `src/analytics.js` | The few Google Analytics events (visit, round end, daily complete, share) |
+| `src/shareImage.js` | Draws the shareable result card on a canvas |
+| `../Scripts/useNHLData.js` | The data hooks (search, random player, daily player) and `API_BASE_URL` |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+The logo and app icons are in `public/` and this folder. `PRODUCT.md` at the repo root records the design principles behind the card-back look.
