@@ -52,7 +52,7 @@ NHL public API ──► Scripts (scrape / weekly update) ──► MongoDB
                                                            │
                               Express API (Cloud Run) ◄────┘
                                         │
-                        React + Vite frontend (Render) ──► players
+                              React + Vite frontend ──► players
 ```
 
 All player data comes from the NHL's own public API: `api-web.nhle.com` for players and standings, `api.nhle.com/stats` for teams, and `assets.nhle.com` for logos and photos.
@@ -132,7 +132,7 @@ Filter parameters: `position`, `team`, mode flags (`isActive`, `modernEra`, `has
 
 ## Deployment
 
-The frontend builds with `npm run build` and is hosted on Render. The API is the container in `Backend/Dockerfile`, running on Google Cloud Run. Database credentials are supplied as environment variables and are never committed.
+The frontend builds with `npm run build` (the output goes to `Frontend/dist`). The API is the container in `Backend/Dockerfile`, running on Google Cloud Run. Database credentials are supplied as environment variables and are never committed.
 
 ## Analytics and privacy
 
