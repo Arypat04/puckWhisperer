@@ -18,7 +18,7 @@ PuckWhisperer is a free, no-signup NHL guessing game. The player gets a mystery 
 - Multiple game modes: Active Players, Award Winners, The Cup, Hall of Famers, Modern Era, and Milestone clubs.
 
 ## Operating Context
-Played in the browser, linked from Reddit and X posts. Player data comes from the NHL's official public APIs, loaded into MongoDB by scraper scripts. Frontend is deployed on Render; backend API on Google Cloud Run.
+Played in the browser, linked from Reddit and X posts. Player data comes from the NHL's official public APIs, loaded into MongoDB by scraper scripts. The backend API runs on Google Cloud Run.
 
 ## Capabilities and Constraints
 - Stack: React 19 and Vite frontend, Express and MongoDB backend. All frontend styling lives in `Frontend/src/App.css` and `index.css`; there is no UI framework.
