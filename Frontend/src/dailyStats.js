@@ -82,8 +82,56 @@ export function recordDailyResult({ dateStr, won, guesses }) {
   return record;
 }
 
-export function buildShareText({ won, guesses, origin }) {
+export function buildShareText({ won, guesses, origin, daily = true }) {
   const squares = guesses.map(g => (g.correct ? '🟩' : '🟥')).join('');
   const result = won ? `${guesses.length}/3` : 'X/3';
-  return `PuckWhisperer Daily Challenge ${result}\n${squares}\n${origin}`;
+  const label = daily ? 'PuckWhisperer Daily Challenge' : 'PuckWhisperer';
+  return `${label} ${result}\n${squares}\n${origin}`;
+}
+
+// The daily streak as of `todayDate`: it only counts while it is still alive,
+// meaning the last daily was played today or yesterday. A stored streak from a
+// week ago is not a current streak.
+export function currentStreak(stats, todayDate) {
+  if (!todayDate || !stats.lastDailyDate || !stats.dailyStreak) return 0;
+  if (stats.lastDailyDate === todayDate || isNextCalendarDay(stats.lastDailyDate, todayDate)) {
+    return stats.dailyStreak;
+  }
+  return 0;
+}
+
+// The round in progress, so a reload or an app switch does not lose it. Only
+// the answer's id is stored (the player is re-fetched), never the player.
+const ROUND_KEY = 'puckwhisperer_round';
+const DAILY_PROGRESS_KEY = 'puckwhisperer_daily_progress';
+
+export function saveRound(round) {
+  writeJSON(ROUND_KEY, { v: 1, ...round });
+}
+
+export function loadRound() {
+  const round = readJSON(ROUND_KEY, null);
+  return round && round.v === 1 && round.answerId ? round : null;
+}
+
+// Guesses and unlocked hints of today's Daily Challenge while it is unfinished,
+// so leaving the round and reopening it cannot give a fresh attempt.
+export function saveDailyProgress(progress) {
+  writeJSON(DAILY_PROGRESS_KEY, progress);
+}
+
+export function getDailyProgress(dateStr) {
+  const progress = readJSON(DAILY_PROGRESS_KEY, null);
+  return progress && progress.dailyDate === dateStr ? progress : null;
+}
+
+// The last mode and filters, so a returning player lands where they left off.
+const PREFS_KEY = 'puckwhisperer_prefs';
+
+export function savePrefs(prefs) {
+  writeJSON(PREFS_KEY, prefs);
+}
+
+export function loadPrefs() {
+  return readJSON(PREFS_KEY, null);
 }

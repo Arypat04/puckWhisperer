@@ -1,11 +1,11 @@
 :root {
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Archivo', 'Helvetica Neue', Arial, system-ui, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: dark;
-  color: #f5f1e8;
-  background-color: #0b0b10;
+  color-scheme: light;
+  color: #0d1928;
+  background-color: #bfbfaf;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -24,6 +24,6 @@ button {
 }
 
 button:focus-visible {
-  outline: 2px solid #683bc2;
+  outline: 2px solid #194292;
   outline-offset: 2px;
 }

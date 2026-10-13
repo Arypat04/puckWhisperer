@@ -1,20 +1,71 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './App.css';
-import { usePlayerSearch, useRandomPlayer, useTeams, useDailyPlayer } from '../../Scripts/useNHLData';
+import { API_BASE_URL, usePlayerSearch, useRandomPlayer, useTeams, useDailyPlayer } from '../../Scripts/useNHLData';
 import {
   getDailyRecord,
+  getDailyProgress,
   getStats as getLifetimeStats,
+  loadRound,
+  saveRound,
+  loadPrefs,
+  savePrefs,
+  saveDailyProgress,
   recordDailyResult,
   updateAggregateStats,
-  buildShareText
+  buildShareText,
+  currentStreak
 } from './dailyStats';
+import { track, trackVisit } from './analytics';
+import { buildShareImage } from './shareImage';
 import puckLogo from '../5320889F-C24B-44FF-BA4F-626C46DCAB12.png';
-import hintLogo from '../src/assets/9E113A00-EBF1-4458-AC2F-58895EF9131F.PNG';
-import teamsLogo from '../src/assets/BC0625CC-DCE0-4267-98EF-88D7D80B6FCA.PNG';
 import questionMark from '../src/assets/question.png';
-import guessLogo from '../src/assets/raw.png';
 
 const DONATE_URL = 'https://buymeacoffee.com/puckwhisperer';
+
+// Shared text links carry utm_source=share so GA can count the visits shares bring in.
+const SHARE_LINK = `${window.location.origin}/?utm_source=share`;
+
+const SHARE_IMAGE_LABELS = {
+  idle: 'Share image',
+  working: 'Making image…',
+  shared: 'Shared!',
+  copied: 'Image copied!',
+  saved: 'Image saved',
+  failed: "Couldn't share",
+};
+
+const formatDailyDate = (dateStr) => {
+  if (!dateStr) return '';
+  return new Date(`${dateStr}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+// The how-to-play dialog opens on a first visit only; the "?" button reopens it.
+const WELCOME_KEY = 'puckwhisperer_welcome_seen';
+const hasSeenWelcome = () => {
+  try { return window.localStorage.getItem(WELCOME_KEY) === '1'; } catch { return false; }
+};
+
+const iconProps = {
+  viewBox: '0 0 24 24', width: 18, height: 18, fill: 'none', stroke: 'currentColor',
+  strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true',
+};
+const ChartIcon = () => (
+  <svg {...iconProps}>
+    <path d="M5 20v-7M12 20V5M19 20v-10" />
+  </svg>
+);
+
+// What each hint reveals, in unlock order. Hint 5 is the player's photo.
+const HINT_LABELS = ['Draft', 'Number', 'Origin', 'Stats', 'Photo'];
+
+// The data hooks surface raw server/network messages ("Failed to fetch"); show
+// what happened and what to do instead. The one case the player can fix
+// themselves (filters that match nobody) gets its own message.
+const NO_MATCH_ERROR = 'No players match the current filters';
+const roundErrorText = (message) => (message === NO_MATCH_ERROR
+  ? 'No players match these filters. Open Filters to loosen them, or pick another mode.'
+  : "Couldn't load a player. Check your connection and try again.");
+const DAILY_ERROR_TEXT = "Couldn't load today's Daily Challenge. Check your connection and try again.";
 
 const EMPTY_FILTERS = {
   position: '',
@@ -107,7 +158,7 @@ const getCareerSpan = (player) => {
   if (!player?.teams || player.teams.length === 0) return null;
   const startYear = player.teams[0].startYear;
   const lastTeam = player.teams[player.teams.length - 1];
-  return `${startYear} - ${lastTeam.isActive ? 'Active' : lastTeam.endYear}`;
+  return `${startYear}–${lastTeam.isActive ? 'Active' : lastTeam.endYear}`;
 };
 
 // Generic fallback icon, used only if a trophy name doesn't match any real
@@ -174,41 +225,130 @@ function App() {
   const [showSearch, setShowSearch] = useState(false);
   const [correctAnswer, setCorrectAnswer] = useState(null);
   const [revealedHints, setRevealedHints] = useState([]);
-  const [hasWon, setHasWon] = useState(false);
-  const [hasLost, setHasLost] = useState(false);
-  // Separate from hasWon/hasLost, which also double as "is the result modal
-  // currently visible" - dismissing that modal (X button, Escape, backdrop
-  // click) used to flip hasWon/hasLost back to false, which re-enabled
-  // Guess/Give Up on a round that was already decided. roundOver stays true
-  // until a new round actually starts, regardless of modal visibility.
+  // True once the round is decided (won, out of guesses, or given up) and
+  // stays true until a new round starts. The result shows on the card itself.
   const [roundOver, setRoundOver] = useState(false);
   const [gaveUp, setGaveUp] = useState(false);
   const [showManualPicker, setShowManualPicker] = useState(false);
-  const [showWelcomePopup, setShowWelcomePopup] = useState(true);
+  const [showWelcomePopup, setShowWelcomePopup] = useState(() => !hasSeenWelcome());
   const [showFilter, setShowFilter] = useState(false);
   const [showModePicker, setShowModePicker] = useState(false);
 
-  const [mode, setMode] = useState(GAME_MODES[0].key);
-  const [filters, setFilters] = useState(GAME_MODES[0].filters);
-  const [tempFilters, setTempFilters] = useState(EMPTY_FILTERS);
+  const [savedPrefs] = useState(() => {
+    const prefs = loadPrefs();
+    return prefs && GAME_MODES.some((m) => m.key === prefs.mode) ? prefs : null;
+  });
+  const [mode, setMode] = useState(savedPrefs?.mode || GAME_MODES[0].key);
+  const [filters, setFilters] = useState(savedPrefs?.filters || GAME_MODES[0].filters);
+  const [tempFilters, setTempFilters] = useState(savedPrefs?.tempFilters || EMPTY_FILTERS);
 
   const [isDailyMode, setIsDailyMode] = useState(false);
   const [dailyRecord, setDailyRecord] = useState(null);
   const [showDailyResult, setShowDailyResult] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [showGiveUpConfirm, setShowGiveUpConfirm] = useState(false);
+  // An action that would discard the current round, held until the player confirms.
+  const [pendingAbandon, setPendingAbandon] = useState(null);
+  // The current Daily Challenge date (Eastern), known once the daily has been fetched.
+  const [todayDate, setTodayDate] = useState(null);
+  // The round just left behind, kept one step back so it can be picked up again.
+  const [resumable, setResumable] = useState(null);
+  const [shareFailed, setShareFailed] = useState(false);
+  const [shareImageState, setShareImageState] = useState('idle');
+  // Phone layout only: the secondary-actions menu. On desktop the actions
+  // are always visible and this flag has no visual effect.
+  const [menuOpen, setMenuOpen] = useState(false);
   const [stats, setStats] = useState(getLifetimeStats);
 
-  const { results } = usePlayerSearch(query);
+  // A round saved by an earlier visit, restored once on load (see below).
+  const [savedRound] = useState(loadRound);
+  const [restoring, setRestoring] = useState(!!savedRound);
+  const skipRandomRef = useRef(!!savedRound);
+  const prevRoundOver = useRef(false);
+  const prevHintCount = useRef(0);
+
+  const { results, error: searchError, settledQuery } = usePlayerSearch(query);
   const { teams } = useTeams();
   const { player: randomPlayer, loading: randomLoading, error: randomError, fetchRandomPlayer } = useRandomPlayer(filters);
-  const { loading: dailyLoading, error: dailyError, fetchDailyPlayer } = useDailyPlayer();
+  const { loading: dailyLoading, error: dailyError, fetchDailyPlayer, clearError: clearDailyError } = useDailyPlayer();
+
+  const randomPlayerRef = useRef(null);
+  randomPlayerRef.current = randomPlayer;
 
   useEffect(() => {
-    if (randomPlayer) {
+    // While a saved round is being restored, the random player the page
+    // fetches on load must not take its place.
+    if (randomPlayer && !skipRandomRef.current) {
       setCorrectAnswer(randomPlayer);
     }
   }, [randomPlayer]);
+
+  // Restore the round from the last visit: re-fetch its player by id (or the
+  // daily player, if it is still that day's), then put guesses, hints and mode
+  // back exactly as they were. If anything fails the normal random round stands.
+  useEffect(() => {
+    if (!savedRound) return undefined;
+    let cancelled = false;
+    (async () => {
+      let player = null;
+      try {
+        if (savedRound.isDaily) {
+          const daily = await fetchDailyPlayer();
+          if (daily && daily.dailyDate === savedRound.dailyDate && daily.id === savedRound.answerId) player = daily;
+        } else {
+          const response = await fetch(`${API_BASE_URL}/players/${savedRound.answerId}`);
+          if (response.ok) player = await response.json();
+        }
+      } catch {
+        player = null;
+      }
+      if (cancelled) return;
+      skipRandomRef.current = false;
+      if (player) {
+        setCorrectAnswer(player);
+        setIsDailyMode(!!savedRound.isDaily);
+        setGuesses(savedRound.guesses || []);
+        setRevealedHints(savedRound.revealedHints || []);
+        prevRoundOver.current = !!savedRound.roundOver; // restoring is not a round ending
+        prevHintCount.current = (savedRound.revealedHints || []).length; // nor a hint being unlocked
+        setRoundOver(!!savedRound.roundOver);
+        setGaveUp(!!savedRound.gaveUp);
+        if (savedRound.mode) setMode(savedRound.mode);
+        if (savedRound.filters) setFilters(savedRound.filters);
+        if (savedRound.tempFilters) setTempFilters(savedRound.tempFilters);
+      } else if (randomPlayerRef.current) {
+        setCorrectAnswer(randomPlayerRef.current);
+      }
+      setRestoring(false);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    savePrefs({ mode, filters, tempFilters });
+  }, [mode, filters, tempFilters]);
+
+  // Keep the saved round current after every change.
+  useEffect(() => {
+    if (restoring || !correctAnswer) return;
+    saveRound({
+      answerId: correctAnswer.id,
+      isDaily: isDailyMode,
+      dailyDate: correctAnswer.dailyDate || null,
+      guesses,
+      revealedHints,
+      roundOver,
+      gaveUp,
+      mode,
+      filters,
+      tempFilters,
+    });
+    if (isDailyMode && correctAnswer.dailyDate && !roundOver) {
+      saveDailyProgress({ dailyDate: correctAnswer.dailyDate, guesses, revealedHints });
+    }
+  }, [restoring, correctAnswer, isDailyMode, guesses, revealedHints, roundOver, gaveUp, mode, filters, tempFilters]);
 
   // On first load, silently check whether today's daily challenge was
   // already completed (so the button can show "Completed" immediately
@@ -217,6 +357,7 @@ function App() {
     (async () => {
       const daily = await fetchDailyPlayer();
       if (!daily) return;
+      setTodayDate(daily.dailyDate);
       const existing = getDailyRecord(daily.dailyDate);
       if (existing) {
         setDailyRecord({ ...existing, playerName: daily.name });
@@ -234,10 +375,10 @@ function App() {
   const startNewRound = async (filtersForRound = filters) => {
     const result = await fetchRandomPlayer(filtersForRound);
     if (!result) return;
+    // The network is clearly working again, so an old Daily error is stale.
+    clearDailyError();
     setIsDailyMode(false);
     setGuesses([]);
-    setHasWon(false);
-    setHasLost(false);
     setGaveUp(false);
     setRevealedHints([]);
     setRoundOver(false);
@@ -245,11 +386,36 @@ function App() {
 
   const refreshStats = () => setStats(getLifetimeStats());
 
+  // Anything that replaces a half-played round asks first. The Daily Challenge
+  // keeps its progress, so leaving it needs no confirmation.
+  const roundInProgress = !isDailyMode && !roundOver && (guesses.length > 0 || revealedHints.length > 0);
+  const guardRound = (action) => {
+    if (roundInProgress) setPendingAbandon(() => action);
+    else action();
+  };
+  const confirmAbandon = () => {
+    const action = pendingAbandon;
+    setPendingAbandon(null);
+    if (correctAnswer) setResumable({ player: correctAnswer, guesses, revealedHints });
+    if (action) action();
+  };
+  const resumeLastRound = () => {
+    if (!resumable) return;
+    setIsDailyMode(false);
+    setCorrectAnswer(resumable.player);
+    setGuesses(resumable.guesses);
+    setRevealedHints(resumable.revealedHints);
+    setGaveUp(false);
+    setRoundOver(false);
+    setResumable(null);
+  };
+
   // Opens the Daily Challenge: if today's puzzle was already solved/missed,
   // shows the recap/share view instead of letting the player retry it.
   const openDailyChallenge = async () => {
     const daily = await fetchDailyPlayer();
     if (!daily) return;
+    setTodayDate(daily.dailyDate);
 
     const existing = getDailyRecord(daily.dailyDate);
     if (existing) {
@@ -258,30 +424,100 @@ function App() {
       return;
     }
 
-    setIsDailyMode(true);
-    setCorrectAnswer(daily);
-    setGuesses([]);
-    setRevealedHints([]);
-    setHasWon(false);
-    setHasLost(false);
-    setGaveUp(false);
-    setRoundOver(false);
+    // Leaving an unfinished Daily Challenge and coming back continues it:
+    // the guesses and hints already used stay used.
+    const progress = getDailyProgress(daily.dailyDate);
+    guardRound(() => {
+      setIsDailyMode(true);
+      setCorrectAnswer(daily);
+      setGuesses(progress?.guesses || []);
+      setRevealedHints(progress?.revealedHints || []);
+      setGaveUp(false);
+      setRoundOver(false);
+    });
   };
 
-  const handleShareResult = async () => {
-    if (!dailyRecord) return;
+  // kind 'daily' shares the saved Daily Challenge result; 'round' shares the
+  // round on screen.
+  const handleShareResult = async (kind = 'daily') => {
+    const source = kind === 'daily' ? dailyRecord : { won: roundWon, guesses };
+    if (!source) return;
     const text = buildShareText({
-      won: dailyRecord.won,
-      guesses: dailyRecord.guesses,
-      origin: window.location.origin
+      won: source.won,
+      guesses: source.guesses,
+      origin: SHARE_LINK,
+      daily: kind === 'daily'
     });
     try {
       await navigator.clipboard.writeText(text);
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2000);
+      track('share', { method: 'text', content_type: kind === 'daily' ? 'daily_result' : 'round_result', won: source.won });
     } catch {
-      // Clipboard permission denied/unavailable - the button just won't
-      // flip to "Copied!"; nothing else depends on this succeeding.
+      // Clipboard permission denied/unavailable: say so instead of leaving
+      // the button looking untouched.
+      setShareFailed(true);
+      setTimeout(() => setShareFailed(false), 2500);
+    }
+  };
+
+  // Shares the result as a picture: the phone's share sheet where it can send a
+  // file, otherwise the clipboard, otherwise a download.
+  const handleShareImage = async (kind = 'daily') => {
+    const source = kind === 'daily' ? dailyRecord : { won: roundWon, guesses };
+    if (!source || shareImageState === 'working') return;
+
+    const flash = (state) => {
+      setShareImageState(state);
+      setTimeout(() => setShareImageState('idle'), 2500);
+    };
+    setShareImageState('working');
+    try {
+      const blob = await buildShareImage({
+        logoSrc: puckLogo,
+        won: source.won,
+        guesses: source.guesses,
+        daily: kind === 'daily',
+        dateLabel: kind === 'daily' ? formatDailyDate(dailyRecord?.dailyDate) : '',
+        streak: kind === 'daily' ? dailyStreak : 0,
+      });
+      const file = new File([blob], 'puckwhisperer-result.png', { type: 'image/png' });
+      const text = buildShareText({ won: source.won, guesses: source.guesses, origin: SHARE_LINK, daily: kind === 'daily' });
+      const event = { content_type: kind === 'daily' ? 'daily_result' : 'round_result', won: source.won };
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], text });
+          track('share', { method: 'image_native', ...event });
+          flash('shared');
+        } catch (err) {
+          if (err && err.name === 'AbortError') setShareImageState('idle'); // they closed the sheet
+          else throw err;
+        }
+        return;
+      }
+
+      if (navigator.clipboard && navigator.clipboard.write && window.ClipboardItem) {
+        try {
+          await navigator.clipboard.write([new window.ClipboardItem({ 'image/png': blob })]);
+          track('share', { method: 'image_clipboard', ...event });
+          flash('copied');
+          return;
+        } catch {
+          // Clipboard images blocked here: fall through to a download.
+        }
+      }
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'puckwhisperer-result.png';
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      track('share', { method: 'image_download', ...event });
+      flash('saved');
+    } catch {
+      flash('failed');
     }
   };
 
@@ -311,19 +547,24 @@ function App() {
     await startNewRound(combined);
   };
 
-  const applyFilters = async () => {
-    const combined = combineFilters(mode, cleanFineFilters(tempFilters));
-    setFilters(combined);
+  const applyFilters = () => {
     setShowFilter(false);
-    await startNewRound(combined);
+    guardRound(async () => {
+      const combined = combineFilters(mode, cleanFineFilters(tempFilters));
+      setFilters(combined);
+      await startNewRound(combined);
+    });
   };
 
-  const clearFilters = async () => {
-    setTempFilters(EMPTY_FILTERS);
-    setMode(GAME_MODES[0].key);
-    const combined = combineFilters(GAME_MODES[0].key, {});
-    setFilters(combined);
-    await startNewRound(combined);
+  const clearFilters = () => {
+    setShowFilter(false);
+    guardRound(async () => {
+      setTempFilters(EMPTY_FILTERS);
+      setMode(GAME_MODES[0].key);
+      const combined = combineFilters(GAME_MODES[0].key, {});
+      setFilters(combined);
+      await startNewRound(combined);
+    });
   };
 
   const handleHintClick = (hintNumber) => {
@@ -338,15 +579,16 @@ function App() {
     return hintNumber === 1 || revealedHints.includes(hintNumber - 1);
   };
 
-  const getStats = (player) => {
-    if (!player || !player.stats) return 'Stats unavailable';
+  // Career line as [abbreviation, value] pairs for the stat block, or null.
+  const getStatPairs = (player) => {
+    if (!player || !player.stats) return null;
 
     if (player.position === 'G') {
       const savePct = Number(player.stats.savePercentage || 0).toFixed(3);
       const gaa = Number(player.stats.goalsAgainstAverage || 0).toFixed(2);
-      return `Games: ${player.stats.games}, Record: ${player.stats.record}, Save %: ${savePct}, GAA: ${gaa}`;
+      return [['GP', player.stats.games], ['REC', player.stats.record], ['SV%', savePct], ['GAA', gaa]];
     }
-    return `Games: ${player.stats.games}, Goals: ${player.stats.goals}, Assists: ${player.stats.assists}, Points: ${player.stats.points}`;
+    return [['GP', player.stats.games], ['G', player.stats.goals], ['A', player.stats.assists], ['PTS', player.stats.points]];
   };
 
   const getTrophyChips = (player) => {
@@ -365,7 +607,7 @@ function App() {
 
   const getDraftInfo = (player) => {
     if (!player || !player.draft || player.draft.team === null) return 'Undrafted';
-    return `Drafted by ${player.draft.team} (${player.draft.year}, Round ${player.draft.round}, Pick ${player.draft.pick})`;
+    return `${player.draft.team} · ${player.draft.year}, Round ${player.draft.round}, Pick ${player.draft.pick}`;
   };
 
   // A tenure's startYear is season-granular, not trade-date-granular: a
@@ -385,29 +627,39 @@ function App() {
   // (e.g. joined during 2024-25, still there for 2025-26) spans two seasons
   // and needs to read as "2025 - 2026", not collapse to just "2026" because
   // the adjustment already absorbed one of those two seasons.
-  const formatTeamYears = (team, previousTeam) => {
+  const formatTeamYears = (team, previousTeam, isCurrent = false) => {
     const isSplitStart = previousTeam && team.startYear === previousTeam.endYear - 1;
     const effectiveStartYear = isSplitStart ? previousTeam.endYear : team.startYear;
     const seasonSpan = team.endYear - team.startYear;
 
+    // The data stores the end of the current season for a player's present
+    // team ("2027"), which reads as a future date; show it as ongoing.
+    if (isCurrent) return `${effectiveStartYear}–now`;
+
     if (seasonSpan <= 1) {
       return `${team.endYear}`;
     }
-    return `${effectiveStartYear} - ${team.endYear}`;
+    return `${effectiveStartYear}–${team.endYear}`;
   };
 
   const getTeamLogos = (player) => {
-    if (!player || !player.teams || player.teams.length === 0) {
+    if (!player) {
+      return <p className="team-empty">{anyRoundLoading ? 'Loading player…' : 'No player loaded.'}</p>;
+    }
+    if (!player.teams || player.teams.length === 0) {
       return <p className="team-empty">No team history yet</p>;
     }
     return player.teams.map((team, index) => (
-      <div key={`${player.id}-${team.teamId}-${team.startYear}`} className="team-hint">
+      <div key={`${player.id}-${index}-${team.teamId}-${team.startYear}`} className="team-hint">
         <img
-          src={team.teamLogoDark || `https://assets.nhle.com/logos/nhl/svg/${team.teamAbbrev}_dark.svg`}
-          alt={team.teamName}
+          src={team.teamLogo || `https://assets.nhle.com/logos/nhl/svg/${team.teamAbbrev}_light.svg`}
+          alt=""
           className="team-logo"
         />
-        <p className="team-years">{formatTeamYears(team, player.teams[index - 1])}</p>
+        <span className="team-name">{team.teamName}</span>
+        <span className="team-years">
+          {formatTeamYears(team, player.teams[index - 1], index === player.teams.length - 1 && (player.isActive || team.isActive))}
+        </span>
       </div>
     ));
   };
@@ -415,7 +667,7 @@ function App() {
   // Shared by any path that ends a round (a deciding guess or a give-up) -
   // records the daily result/share data if this was a daily round, or just
   // rolls the outcome into lifetime stats otherwise.
-  const finishRound = (won, finalGuesses) => {
+  const finishRound = (won, finalGuesses, gave = false) => {
     if (isDailyMode && correctAnswer?.dailyDate) {
       const record = recordDailyResult({
         dateStr: correctAnswer.dailyDate,
@@ -427,13 +679,27 @@ function App() {
       updateAggregateStats({ won, isDaily: false });
     }
     refreshStats();
+
+    track('round_end', {
+      game_mode: isDailyMode ? 'daily' : mode,
+      daily: isDailyMode,
+      won,
+      guesses_used: finalGuesses.length,
+      hints_used: revealedHints.length,
+      gave_up: gave,
+    });
+    if (isDailyMode && correctAnswer?.dailyDate) {
+      track('daily_complete', { won, guesses_used: finalGuesses.length, streak: getLifetimeStats().dailyStreak });
+    }
   };
 
   const handleGuess = (player) => {
     if (!player || guesses.length >= 3 || roundOver) return;
+    if (guesses.some((g) => g.id === player.id)) return;
 
     const isCorrect = player.id === correctAnswer?.id;
     const newGuess = {
+      id: player.id,
       name: player.name,
       number: guesses.length + 1,
       correct: isCorrect,
@@ -446,8 +712,6 @@ function App() {
 
     const won = isCorrect;
     const lost = !isCorrect && updatedGuesses.length >= 3;
-    if (won) setHasWon(true);
-    else if (lost) setHasLost(true);
 
     if (won || lost) {
       setRoundOver(true);
@@ -458,9 +722,8 @@ function App() {
   const handleGiveUp = () => {
     if (!correctAnswer || roundOver || guesses.length >= 3 || anyRoundLoading) return;
     setGaveUp(true);
-    setHasLost(true);
     setRoundOver(true);
-    finishRound(false, guesses);
+    finishRound(false, guesses, true);
   };
 
   // Shared by the dropdown's Select button and Enter-key submission - picks
@@ -468,62 +731,170 @@ function App() {
   // overlay is open.
   const selectSearchResult = (player) => {
     if (showManualPicker) {
-      setCorrectAnswer(player);
-      setIsDailyMode(false);
-      setGuesses([]);
-      setRevealedHints([]);
-      setHasWon(false);
-      setHasLost(false);
-      setGaveUp(false);
-      setRoundOver(false);
       setShowManualPicker(false);
+      guardRound(() => {
+        setCorrectAnswer(player);
+        setIsDailyMode(false);
+        setGuesses([]);
+        setRevealedHints([]);
+        setGaveUp(false);
+        setRoundOver(false);
+      });
     } else {
+      // Guessing the same player twice would burn a guess for nothing.
+      if (guesses.some((g) => g.id === player.id)) return;
       handleGuess(player);
     }
     setQuery('');
   };
 
+  const confirmGiveUp = () => {
+    setShowGiveUpConfirm(false);
+    handleGiveUp();
+  };
+
   const closeAllOverlays = () => {
+    setShowGiveUpConfirm(false);
+    setPendingAbandon(null);
     setShowSearch(false);
     setShowManualPicker(false);
     setQuery('');
     setShowWelcomePopup(false);
     setShowFilter(false);
     setShowModePicker(false);
-    setHasWon(false);
-    setHasLost(false);
     setShowDailyResult(false);
     setShowStats(false);
   };
 
-  const anyOverlayOpen = showSearch || showManualPicker || showWelcomePopup || showFilter || showModePicker || hasWon || hasLost || showDailyResult || showStats;
+  const anyOverlayOpen = showSearch || showManualPicker || showWelcomePopup || showFilter || showModePicker || showDailyResult || showStats || showGiveUpConfirm || !!pendingAbandon;
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key !== 'Escape') return;
-      if (showSearch) setShowSearch(false);
+      if (menuOpen) setMenuOpen(false);
+      else if (showGiveUpConfirm) setShowGiveUpConfirm(false);
+      else if (pendingAbandon) setPendingAbandon(null);
+      else if (showSearch) setShowSearch(false);
       else if (showManualPicker) {
         setShowManualPicker(false);
         setQuery('');
       } else if (showWelcomePopup) setShowWelcomePopup(false);
       else if (showFilter) setShowFilter(false);
       else if (showModePicker) setShowModePicker(false);
-      else if (hasWon) setHasWon(false);
-      else if (hasLost) setHasLost(false);
       else if (showDailyResult) setShowDailyResult(false);
       else if (showStats) setShowStats(false);
     };
 
-    if (anyOverlayOpen) {
+    // The menu closes on Escape too, but it has its own backdrop, so it
+    // doesn't count as a modal overlay above.
+    if (anyOverlayOpen || menuOpen) {
       window.addEventListener('keydown', handleKeyDown);
     }
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [anyOverlayOpen, showSearch, showManualPicker, showWelcomePopup, showFilter, showModePicker, hasWon, hasLost, showDailyResult, showStats]);
+  }, [anyOverlayOpen, menuOpen, showGiveUpConfirm, pendingAbandon, showSearch, showManualPicker, showWelcomePopup, showFilter, showModePicker, showDailyResult, showStats]);
+
+  // One "visit" event per page load, with how long it has been since the last one.
+  useEffect(() => {
+    trackVisit();
+  }, []);
+
+  // Showing the dialog counts as seeing it, however it later gets closed.
+  useEffect(() => {
+    if (!showWelcomePopup) return;
+    try { window.localStorage.setItem(WELCOME_KEY, '1'); } catch { /* storage unavailable: it just shows again next visit */ }
+  }, [showWelcomePopup]);
+
+  // While a modal is open, keyboard and screen-reader users stay inside it:
+  // focus moves to the dialog, the page behind is inert, and focus returns to
+  // whatever opened it when the dialog closes.
+  useEffect(() => {
+    if (!anyOverlayOpen) return undefined;
+    const opener = document.activeElement;
+    const dialog = document.querySelector('[role="dialog"]');
+    if (dialog && !dialog.contains(document.activeElement)) dialog.focus();
+    const behind = [...document.querySelectorAll('#root > *')]
+      .filter((el) => el !== dialog && !el.matches('.overlay-screen, [role="dialog"]'));
+    behind.forEach((el) => el.setAttribute('inert', ''));
+    return () => {
+      behind.forEach((el) => el.removeAttribute('inert'));
+      if (opener instanceof HTMLElement && document.contains(opener)) opener.focus();
+    };
+  }, [anyOverlayOpen]);
+
+  // Keyboard: 1-5 unlock the next hint, G opens the guess box.
+  const shortcutRef = useRef(null);
+  shortcutRef.current = (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const target = e.target;
+    if (target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
+    if (anyOverlayOpen || menuOpen) return;
+    const key = e.key.toLowerCase();
+    if (/^[1-5]$/.test(key)) {
+      handleHintClick(Number(key));
+    } else if (key === 'g' && !guessDisabled) {
+      e.preventDefault();
+      setShowSearch(true);
+    } else if (key === 'n' && !anyRoundLoading) {
+      e.preventDefault();
+      guardRound(() => startNewRound()); // asks first if a round is in progress
+    } else if (key === 'd' && !anyRoundLoading) {
+      e.preventDefault();
+      openDailyChallenge();
+    } else if (key === 'q' && !guessDisabled) {
+      e.preventDefault();
+      setShowGiveUpConfirm(true); // always confirms
+    }
+  };
+  useEffect(() => {
+    const onKey = (e) => shortcutRef.current?.(e);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  // When a round ends the Guess button becomes New player: keep keyboard focus on it.
+  useEffect(() => {
+    if (roundOver && !prevRoundOver.current && !restoring) {
+      document.querySelector('.guess-cta')?.focus({ preventScroll: true });
+    }
+    prevRoundOver.current = roundOver;
+  }, [roundOver, restoring]);
+
+  // A clue unlocked on a phone can land below the pinned Guess bar when the
+  // career is long; bring the newest row into view (the row's scroll-margin
+  // keeps it clear of the bar).
+  useEffect(() => {
+    const count = revealedHints.length;
+    if (count > prevHintCount.current && !restoring) {
+      const rows = document.querySelectorAll('.card-hints .stat-row');
+      const newest = rows[rows.length - 1];
+      if (newest) {
+        const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        newest.scrollIntoView({ block: 'nearest', behavior: calm ? 'auto' : 'smooth' });
+      }
+    }
+    prevHintCount.current = count;
+  }, [revealedHints, restoring]);
+
+  // A new mystery player starts clean: close the menu.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [correctAnswer?.id]);
 
   const getActiveFilterCount = () => Object.keys(filters).filter(k => !MODE_FILTER_KEYS.includes(k)).length;
 
-  const anyRoundLoading = randomLoading || dailyLoading;
+  const anyRoundLoading = randomLoading || dailyLoading || restoring;
   const guessDisabled = roundOver || guesses.length >= 3 || !correctAnswer || anyRoundLoading;
+  // The "?" tile turns face-up when the Photo hint is used or the round ends.
+  const faceUp = revealedHints.includes(5) || roundOver;
+  const roundWon = guesses.some((g) => g.correct);
+  const resultTitle = roundWon
+    ? (isDailyMode ? 'Daily Challenge solved!' : 'You got it!')
+    : isDailyMode ? 'Daily Challenge missed' : gaveUp ? 'You gave up!' : 'You ran out of guesses!';
+  // Offered while the round that replaced it is still untouched.
+  const showResume = !!resumable && !!correctAnswer && correctAnswer.id !== resumable.player.id
+    && !isDailyMode && !roundOver && !roundInProgress;
+  const dailyStreak = currentStreak(stats, todayDate);
+  const searchSettled = settledQuery === query;
   const searchTitle = showManualPicker ? 'Choose the Mystery Player' : 'Make Your Guess';
   const currentYear = new Date().getFullYear();
   const trophyChips = revealedHints.includes(4) ? getTrophyChips(correctAnswer) : null;
@@ -535,7 +906,7 @@ function App() {
       {anyOverlayOpen && <div className="overlay-screen" onClick={closeAllOverlays}></div>}
 
       {showWelcomePopup && (
-        <div className="modal-card welcome-box">
+        <div className="modal-card welcome-box" role="dialog" aria-modal="true" aria-label="How to play" tabIndex={-1}>
           <button className="dismiss-button" onClick={() => setShowWelcomePopup(false)} aria-label="Close">×</button>
           <h2>Welcome to PuckWhisperer!</h2>
           <div className="rules-content">
@@ -544,168 +915,295 @@ function App() {
             </p>
             <h3>How to Play</h3>
             <ul>
-              <li>Guess the mystery NHL player in 3 tries or less</li>
-              <li>Years played on each team are shown from the start</li>
-              <li>Hints unlock in order (1 → 5)</li>
-              <li>Hint 1: Draft info</li>
-              <li>Hint 2: Jersey # and position</li>
-              <li>Hint 3: Nationality</li>
-              <li>Hint 4: Player stats and trophies</li>
-              <li>Hint 5: Silhouette</li>
-              <li>Starts on Active Players - tap the Mode pill up top to try Hall of Famers, Award Winners, milestone clubs, or Hard mode (every player ever)</li>
+              <li>You get 3 guesses to name the mystery NHL player.</li>
+              <li>The teams they played for, and when, are shown from the start.</li>
+              <li>Tap a hint to unlock a clue. Hints unlock one at a time, in order:</li>
+              <li className="rules-sub"><strong>Draft:</strong> who drafted them, and when</li>
+              <li className="rules-sub"><strong>Number:</strong> jersey number and position</li>
+              <li className="rules-sub"><strong>Origin:</strong> birthplace and country</li>
+              <li className="rules-sub"><strong>Stats:</strong> career totals and trophies</li>
+              <li className="rules-sub"><strong>Photo:</strong> their picture</li>
+              <li>Tap Mode to switch to Hall of Famers, Award Winners, milestone clubs, or All Players (hard mode, every player ever).</li>
+              <li>The Daily Challenge is one puzzle a day, the same for everyone.</li>
+              <li>On a keyboard: 1–5 unlock hints, G guesses, N is a new player, D opens the Daily Challenge and Q gives up.</li>
             </ul>
           </div>
         </div>
       )}
 
       <div className="header-section">
-        <a
-          href={DONATE_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="icon-button donate-button"
-          aria-label="Support PuckWhisperer"
-          title="Buy me a coffee"
-        >
-          ☕
-        </a>
-        <img src={puckLogo} className="puck-logo" alt="Puck Logo" />
-        <div className="header-actions-right">
+        <div className="header-actions-left">
           <button
-            className="icon-button"
+            className="header-button"
             onClick={() => { setShowStats(true); refreshStats(); }}
-            aria-label="Stats"
             title="Your stats"
           >
-            📊
+            <ChartIcon />
+            <span>Stats</span>
           </button>
-          <button className="icon-button" onClick={() => setShowWelcomePopup(true)} aria-label="Help" title="How to play">?</button>
+        </div>
+        <img src={puckLogo} className="puck-logo" alt="PuckWhisperer" />
+        <div className="header-actions-right">
+          <button className="header-button" onClick={() => setShowWelcomePopup(true)} title="How to play">
+            <span className="help-mark" aria-hidden="true">?</span>
+            <span>Help</span>
+          </button>
         </div>
       </div>
 
-      <button
-        className={`daily-button ${dailyRecord ? 'completed' : ''}`}
-        onClick={openDailyChallenge}
-        disabled={anyRoundLoading}
-      >
-        {dailyRecord
-          ? '✓ Daily Challenge Complete'
-          : anyRoundLoading ? 'Loading…' : '🗓 Daily Challenge'}
-      </button>
+      <div className="top-actions">
+        <button
+          className={`daily-button ${dailyRecord ? 'completed' : ''}`}
+          onClick={openDailyChallenge}
+          disabled={anyRoundLoading}
+          aria-label={dailyRecord ? 'Daily Challenge complete, view your result' : 'Daily Challenge'}
+          aria-keyshortcuts="D"
+          title="Daily Challenge (press D)"
+        >
+          <span className="daily-main">
+            {dailyRecord
+              ? <>✓ Daily<span className="daily-long daily-done-long"> Challenge Complete</span></>
+              : anyRoundLoading ? 'Loading…' : <>Daily<span className="daily-long"> Challenge</span></>}
+          </span>
+          {(dailyRecord || dailyStreak > 0) && (
+            <span className="daily-meta">
+              {dailyRecord && (
+                <span className="daily-result">{dailyRecord.won ? `Solved ${dailyRecord.guesses.length}/3` : 'Missed'}</span>
+              )}
+              {dailyStreak > 0 && <span className="daily-streak">{dailyStreak}-day streak</span>}
+            </span>
+          )}
+        </button>
 
-      <button
-        className="mode-pill"
-        onClick={() => setShowModePicker(true)}
-        disabled={anyRoundLoading}
-      >
-        Mode: <strong>{currentModeInfo.label}</strong> ▾
-      </button>
+        <button
+          className="mode-pill"
+          onClick={() => setShowModePicker(true)}
+          disabled={anyRoundLoading}
+        >
+          <span className="mode-prefix">Mode: </span><strong>{currentModeInfo.label}</strong> ▾
+        </button>
+      </div>
       <p className="mode-description">
-        {isDailyMode ? "Daily Challenge - today's puzzle, one try per day." : currentModeInfo.hint}
+        {isDailyMode ? "Today's puzzle, the same for everyone. One round a day." : currentModeInfo.hint}
       </p>
-      {dailyError && <p className="random-error">{dailyError}</p>}
+      {dailyError && (
+        <div className="random-error error-row" role="alert">
+          <p>{DAILY_ERROR_TEXT}</p>
+          <button className="btn btn-secondary" onClick={openDailyChallenge} disabled={anyRoundLoading}>Try again</button>
+        </div>
+      )}
 
-      <div className="main-content">
-        <div className="team-section panel">
-          <img src={teamsLogo} className="teams-logo" alt="Teams" />
+      <main className="card">
+        <div className="card-photo">
+          <div className={`card-flip ${faceUp ? 'face-up' : ''}`}>
+            <img
+              src={questionMark}
+              className="player-mug flip-face flip-back"
+              alt="Mystery player, photo hidden"
+              aria-hidden={faceUp}
+            />
+            <img
+              src={correctAnswer?.silhouette}
+              className="player-mug flip-face flip-front"
+              onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}
+              alt={roundOver ? correctAnswer?.name : 'Photo of the mystery player'}
+              aria-hidden={!faceUp}
+            />
+          </div>
+          <div className="guess-slots">
+            <h2 className="card-label">Guesses</h2>
+            <ol className="guess-list">
+              {[0, 1, 2].map((slot) => {
+                const guess = guesses[slot];
+                return guess ? (
+                  <li key={slot} className={`guess-chip ${guess.correct ? 'correct' : 'incorrect'}`}>
+                    #{guess.number} {guess.name} {guess.correct ? '✓' : '✗'}
+                  </li>
+                ) : (
+                  <li key={slot} className="guess-chip empty" aria-label={`Guess ${slot + 1}, not used yet`}>
+                    #{slot + 1}
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        </div>
+
+        <section className="card-timeline">
+          <h2 className="card-label">Teams</h2>
           <div className="team-list" key={correctAnswer?.id}>
             {getTeamLogos(correctAnswer)}
           </div>
-        </div>
-
-        <div className="main-game-section panel">
-          <img
-            src={revealedHints.includes(5) ? correctAnswer?.silhouette : questionMark}
-            className="player-mug"
-            alt="Mystery player"
-          />
-
-          <div className="buttons-section">
-            <button
-              className="btn btn-primary"
-              onClick={() => startNewRound()}
-              disabled={anyRoundLoading}
-            >
-              {anyRoundLoading ? 'Loading…' : 'Random Player'}
-            </button>
-
-            {randomError && <p className="random-error">{randomError}</p>}
-
-            <div className="secondary-actions">
-              <button
-                className="btn btn-secondary"
-                onClick={() => setShowSearch(true)}
-                disabled={guessDisabled}
-              >
-                Guess
-              </button>
-              <button className="btn btn-secondary" onClick={() => setShowFilter(true)}>
-                Filters{getActiveFilterCount() > 0 && ` (${getActiveFilterCount()})`}
-              </button>
-            </div>
-
-            <button className="btn btn-secondary custom-player-btn" onClick={() => setShowManualPicker(true)}>
-              Custom Player
-            </button>
-
-            <button className="btn btn-danger" onClick={handleGiveUp} disabled={guessDisabled}>
-              Give Up
-            </button>
-          </div>
-
-          <div className="hint-grid">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                key={n}
-                className={`hint-button ${revealedHints.includes(n) ? 'revealed' : ''}`}
-                onClick={() => handleHintClick(n)}
-                disabled={!isHintClickable(n)}
-              >
-                Hint {n}
-              </button>
-            ))}
-          </div>
-
-          {guesses.length > 0 && (
-            <div className="guess-section">
-              <img src={guessLogo} alt="Guesses" className="guess-logo" />
-              <div className="guess-chips">
-                {guesses.map((guess, index) => (
-                  <span key={index} className={`guess-chip ${guess.correct ? 'correct' : 'incorrect'}`}>
-                    #{guess.number} {guess.name} {guess.correct ? '✓' : '✗'}
-                  </span>
-                ))}
-              </div>
+          {randomError && (
+            <div className="random-error error-row" role="alert">
+              <p>{roundErrorText(randomError)}</p>
+              <button className="btn btn-secondary" onClick={() => startNewRound()} disabled={anyRoundLoading}>Try again</button>
             </div>
           )}
-        </div>
+        </section>
 
-        <div className="hint-section panel">
-          <img src={hintLogo} className="hint-logo" alt="Hints" />
-          <div className="hint-block-container">
-            {!revealedHints.includes(1) && !revealedHints.includes(2) && !revealedHints.includes(3) && !revealedHints.includes(4) && (
-              <p className="hint-block-empty">Unlock hints below to see clues here</p>
-            )}
-            {revealedHints.includes(1) && <div className="hint-block">{getDraftInfo(correctAnswer)}</div>}
-            {revealedHints.includes(2) && (
-              <div className="hint-block">
-                Jersey #: {correctAnswer?.sweaterNumber || 'N/A'} · Position: {formatPosition(correctAnswer?.position)}
-              </div>
-            )}
-            {revealedHints.includes(3) && (
-              <div className="hint-block">Nationality: {formatNationality(correctAnswer)}</div>
-            )}
-            {revealedHints.includes(4) && (
-              <>
-                <div className="hint-block">{getStats(correctAnswer)}</div>
-                {trophyChips && <div className="trophy-row">{trophyChips}</div>}
-              </>
-            )}
+        <div className="hint-tabs">
+          <h2 className="card-label">Hints</h2>
+          <div className="hint-tab-row">
+            {HINT_LABELS.map((label, index) => {
+              const n = index + 1;
+              return (
+                <button
+                  key={n}
+                  className={`hint-button ${revealedHints.includes(n) ? 'revealed' : isHintClickable(n) ? 'available' : ''}`}
+                  title={`${label} (press ${n})`}
+                  aria-keyshortcuts={String(n)}
+                  onClick={() => handleHintClick(n)}
+                  disabled={!isHintClickable(n)}
+                  aria-label={isHintClickable(n) || revealedHints.includes(n)
+                    ? `${label} hint`
+                    : `${label} hint, locked until ${HINT_LABELS[index - 1]} is unlocked`}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
-      </div>
+
+        <section className="card-hints" aria-label="Unlocked hints" aria-live="polite">
+          {showResume && (
+            <div className="resume-notice">
+              <p>You left a round in progress.</p>
+              <button className="btn btn-secondary" onClick={resumeLastRound}>Resume it</button>
+            </div>
+          )}
+          {roundOver && correctAnswer && (
+            <div className={`round-result ${roundWon ? 'won' : 'lost'}`} role="status">
+              <div className="round-result-text">
+                <p className="round-result-title">{resultTitle}</p>
+                <p className="round-result-name">
+                  {roundWon ? <strong>{correctAnswer.name}</strong> : <>The answer was <strong>{correctAnswer.name}</strong></>}
+                </p>
+              </div>
+              {(isDailyMode || guesses.length > 0) && (
+                <div className="round-result-actions">
+                  <button className="btn btn-secondary" onClick={() => handleShareImage(isDailyMode ? 'daily' : 'round')} disabled={shareImageState === 'working'}>
+                    {SHARE_IMAGE_LABELS[shareImageState]}
+                  </button>
+                  <button className="btn btn-secondary" onClick={() => handleShareResult(isDailyMode ? 'daily' : 'round')}>
+                    {shareCopied ? 'Copied!' : shareFailed ? "Couldn't copy" : 'Copy text'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+          <div className="hint-block-container">
+            {![1, 2, 3, 4].some((n) => revealedHints.includes(n)) ? (
+              <p className="hint-block-empty">Tap Draft to unlock your first clue.</p>
+            ) : (
+              <dl className="stat-block">
+                {revealedHints.includes(1) && (
+                  <div className="stat-row"><dt>Draft</dt><dd>{getDraftInfo(correctAnswer)}</dd></div>
+                )}
+                {revealedHints.includes(2) && (
+                  <div className="stat-row">
+                    <dt>Number</dt>
+                    <dd>{correctAnswer?.sweaterNumber ? `#${correctAnswer.sweaterNumber}` : 'N/A'} · {formatPosition(correctAnswer?.position)}</dd>
+                  </div>
+                )}
+                {revealedHints.includes(3) && (
+                  <div className="stat-row"><dt>Born</dt><dd>{formatNationality(correctAnswer)}</dd></div>
+                )}
+                {revealedHints.includes(4) && (
+                  <div className="stat-row">
+                    <dt>Career</dt>
+                    <dd className="stat-figures">
+                      {getStatPairs(correctAnswer)
+                        ? getStatPairs(correctAnswer).map(([key, value]) => (
+                          <span key={key} className="stat-figure"><span className="stat-key">{key}</span> {value}</span>
+                        ))
+                        : 'Stats unavailable'}
+                    </dd>
+                  </div>
+                )}
+                {revealedHints.includes(4) && trophyChips && (
+                  <div className="stat-row"><dt>Trophies</dt><dd><div className="trophy-row">{trophyChips}</div></dd></div>
+                )}
+              </dl>
+            )}
+          </div>
+        </section>
+
+        {menuOpen && <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />}
+        <div className="card-bar">
+          {roundOver ? (
+            <button
+              className="btn btn-primary guess-cta"
+              onClick={() => startNewRound()}
+              disabled={anyRoundLoading}
+              aria-keyshortcuts="N"
+              title="New player (press N)"
+            >
+              {anyRoundLoading ? 'Loading…' : 'New player'}
+            </button>
+          ) : (
+            <button
+              className="btn btn-primary guess-cta"
+              onClick={() => setShowSearch(true)}
+              disabled={guessDisabled}
+              aria-keyshortcuts="G"
+              title="Guess (press G)"
+            >
+              {anyRoundLoading ? 'Loading…' : 'Guess'}
+            </button>
+          )}
+
+          <button
+            className="btn btn-secondary menu-toggle"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-haspopup="true"
+            aria-expanded={menuOpen}
+          >
+            More
+          </button>
+
+          <div className={`card-menu ${menuOpen ? 'open' : ''}`}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => { setMenuOpen(false); guardRound(() => startNewRound()); }}
+              disabled={anyRoundLoading}
+              aria-keyshortcuts="N"
+              title="New player (press N)"
+            >
+              New player
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => { setMenuOpen(false); setShowFilter(true); }}
+            >
+              Filters{getActiveFilterCount() > 0 && ` (${getActiveFilterCount()})`}
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => { setMenuOpen(false); setShowManualPicker(true); }}
+            >
+              Custom player
+            </button>
+            <button
+              className="btn btn-ghost give-up"
+              onClick={() => { setMenuOpen(false); setShowGiveUpConfirm(true); }}
+              disabled={guessDisabled}
+              aria-keyshortcuts="Q"
+              title="Give up (press Q)"
+            >
+              Give up
+            </button>
+          </div>
+        </div>
+      </main>
 
       <footer className="site-footer">
+        <p className="footer-support">
+          <a href={DONATE_URL} target="_blank" rel="noopener noreferrer">
+            Enjoying PuckWhisperer? Buy me a coffee<span className="visually-hidden"> (opens in a new tab)</span>
+          </a>
+        </p>
         <p>
           PuckWhisperer is not affiliated or associated in any way with the National Hockey League.
           Use of any logos on this website does not constitute a sponsorship or endorsement by the
@@ -714,7 +1212,7 @@ function App() {
       </footer>
 
       {(showSearch || showManualPicker) && (
-        <div className="search-overlay animate-in">
+        <div className="search-overlay animate-in" role="dialog" aria-modal="true" aria-label={searchTitle} tabIndex={-1}>
           <button
             className="dismiss-button"
             onClick={() => {
@@ -737,13 +1235,14 @@ function App() {
               id="query"
               className="input"
               type="search"
-              placeholder="Search for a player..."
+              placeholder="Search players by name"
+              aria-label="Search players by name"
               name="searchbar"
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && results.length > 0) {
+                if (e.key === 'Enter' && results.length > 0 && searchSettled) {
                   selectSearchResult(results[0]);
                 }
               }}
@@ -752,22 +1251,34 @@ function App() {
 
           {query && (
             <div className="dropdown animate-in">
-              {results.length > 0 ? (
+              {query.length < 2 ? (
+                <div className="dropdown-empty">Type at least 2 letters.</div>
+              ) : results.length > 0 ? (
                 results.map((player) => (
-                  <div key={player.id} className="dropdown-item">
-                    <div className="dropdown-item-info">
+                  <button
+                    type="button"
+                    key={player.id}
+                    className="dropdown-item"
+                    onClick={() => selectSearchResult(player)}
+                    disabled={!showManualPicker && guesses.some((g) => g.id === player.id)}
+                  >
+                    <span className="dropdown-item-info">
                       <span className="dropdown-item-name">{player.name}</span>
                       {getCareerSpan(player) && (
                         <span className="dropdown-item-years">{getCareerSpan(player)}</span>
                       )}
-                    </div>
-                    <button className="select-button" onClick={() => selectSearchResult(player)}>
-                      Select
-                    </button>
-                  </div>
+                    </span>
+                    <span className="select-button">
+                      {!showManualPicker && guesses.some((g) => g.id === player.id) ? 'Guessed' : 'Select'}
+                    </span>
+                  </button>
                 ))
+              ) : !searchSettled ? (
+                <div className="dropdown-empty">Searching…</div>
+              ) : searchError ? (
+                <div className="dropdown-empty" role="alert">Couldn't search right now. Check your connection and try again.</div>
               ) : (
-                <div className="dropdown-empty">No matching players</div>
+                <div className="dropdown-empty">No players match “{query}”. Check the spelling.</div>
               )}
             </div>
           )}
@@ -775,7 +1286,7 @@ function App() {
       )}
 
       {showFilter && (
-        <div className="filter-overlay animate-in">
+        <div className="filter-overlay animate-in" role="dialog" aria-modal="true" aria-label="Filter players" tabIndex={-1}>
           <button className="dismiss-button" onClick={() => setShowFilter(false)} aria-label="Close">×</button>
           <div className="filter-header">
             <h3>Filter Players</h3>
@@ -786,8 +1297,9 @@ function App() {
               <h4>Basic Info</h4>
               <div className="filter-row">
                 <div className="filter-group">
-                  <label>Position</label>
+                  <label htmlFor="filter-1">Position</label>
                   <select
+                    id="filter-1"
                     value={tempFilters.position}
                     onChange={(e) => handleFilterChange('position', e.target.value)}
                   >
@@ -800,8 +1312,9 @@ function App() {
                   </select>
                 </div>
                 <div className="filter-group">
-                  <label>Jersey Number</label>
+                  <label htmlFor="filter-2">Jersey Number</label>
                   <input
+                    id="filter-2"
                     type="number"
                     min="1"
                     max="99"
@@ -812,8 +1325,9 @@ function App() {
               </div>
               <div className="filter-row">
                 <div className="filter-group">
-                  <label>Team</label>
+                  <label htmlFor="filter-3">Team</label>
                   <select
+                    id="filter-3"
                     value={tempFilters.team}
                     onChange={(e) => handleFilterChange('team', e.target.value)}
                   >
@@ -830,8 +1344,9 @@ function App() {
               <h4>Career Stats (Minimum)</h4>
               <div className="filter-row">
                 <div className="filter-group">
-                  <label>Games Played</label>
+                  <label htmlFor="filter-4">Games Played</label>
                   <input
+                    id="filter-4"
                     type="number"
                     min="0"
                     value={tempFilters['stats.games']}
@@ -839,8 +1354,9 @@ function App() {
                   />
                 </div>
                 <div className="filter-group">
-                  <label>Goals</label>
+                  <label htmlFor="filter-5">Goals</label>
                   <input
+                    id="filter-5"
                     type="number"
                     min="0"
                     value={tempFilters['stats.goals']}
@@ -850,8 +1366,9 @@ function App() {
               </div>
               <div className="filter-row">
                 <div className="filter-group">
-                  <label>Assists</label>
+                  <label htmlFor="filter-6">Assists</label>
                   <input
+                    id="filter-6"
                     type="number"
                     min="0"
                     value={tempFilters['stats.assists']}
@@ -859,8 +1376,9 @@ function App() {
                   />
                 </div>
                 <div className="filter-group">
-                  <label>Points</label>
+                  <label htmlFor="filter-7">Points</label>
                   <input
+                    id="filter-7"
                     type="number"
                     min="0"
                     value={tempFilters['stats.points']}
@@ -874,8 +1392,9 @@ function App() {
               <h4>Draft Info</h4>
               <div className="filter-row">
                 <div className="filter-group">
-                  <label>Draft Year</label>
+                  <label htmlFor="filter-8">Draft Year</label>
                   <input
+                    id="filter-8"
                     type="number"
                     min="1963"
                     max={currentYear}
@@ -884,8 +1403,9 @@ function App() {
                   />
                 </div>
                 <div className="filter-group">
-                  <label>Draft Round</label>
+                  <label htmlFor="filter-9">Draft Round</label>
                   <select
+                    id="filter-9"
                     value={tempFilters['draft.round']}
                     onChange={(e) => handleFilterChange('draft.round', e.target.value)}
                   >
@@ -901,7 +1421,7 @@ function App() {
 
           <div className="filter-footer">
             <button className="clear-filters-btn" onClick={clearFilters} disabled={randomLoading}>
-              Clear All
+              Clear Filters
             </button>
             <button className="apply-filters-btn" onClick={applyFilters} disabled={randomLoading}>
               Apply Filters
@@ -911,7 +1431,7 @@ function App() {
       )}
 
       {showModePicker && (
-        <div className="mode-picker-overlay animate-in">
+        <div className="mode-picker-overlay animate-in" role="dialog" aria-modal="true" aria-label="Choose a game mode" tabIndex={-1}>
           <button className="dismiss-button" onClick={() => setShowModePicker(false)} aria-label="Close">×</button>
           <h3>Choose a Game Mode</h3>
           {MODE_GROUPS.map((group) => (
@@ -924,7 +1444,7 @@ function App() {
                     <button
                       key={m.key}
                       className={`mode-button ${mode === m.key ? 'selected' : ''}`}
-                      onClick={() => { selectMode(m.key); setShowModePicker(false); }}
+                      onClick={() => { setShowModePicker(false); guardRound(() => selectMode(m.key)); }}
                       disabled={anyRoundLoading}
                       title={m.hint}
                     >
@@ -938,110 +1458,84 @@ function App() {
         </div>
       )}
 
-      {hasWon && (
-        <div className="modal-card accent-success">
-          <button onClick={() => setHasWon(false)} className="dismiss-button" aria-label="Close">×</button>
-          <h2>{isDailyMode ? 'Daily Challenge - Solved!' : 'You guessed correctly!'}</h2>
-          <img src={correctAnswer?.silhouette} alt="Player" className="mugshot" />
-          <p>{correctAnswer?.name}</p>
+      {showGiveUpConfirm && (
+        <div className="modal-card keyline accent-danger" role="dialog" aria-modal="true" aria-label="Confirm give up" tabIndex={-1}>
+          <button className="dismiss-button" onClick={() => setShowGiveUpConfirm(false)} aria-label="Close">×</button>
+          <h2>Give up?</h2>
+          <p>
+            {isDailyMode
+              ? "The answer will be revealed and today's Daily Challenge will count as missed. You can't retry it."
+              : 'The answer will be revealed and this round counts as a loss.'}
+          </p>
           <div className="modal-actions">
-            {isDailyMode ? (
-              <button onClick={handleShareResult} className="btn btn-primary">
-                {shareCopied ? 'Copied!' : 'Share Result'}
-              </button>
-            ) : (
-              <button
-                onClick={async () => {
-                  setHasWon(false);
-                  await startNewRound();
-                }}
-                className="btn btn-primary"
-              >
-                Play Again
-              </button>
-            )}
+            <button className="btn btn-danger" onClick={confirmGiveUp}>Give up</button>
+            <button className="btn btn-secondary" onClick={() => setShowGiveUpConfirm(false)} autoFocus>Keep playing</button>
           </div>
         </div>
       )}
 
-      {hasLost && (
-        <div className="modal-card accent-danger">
-          <button onClick={() => setHasLost(false)} className="dismiss-button" aria-label="Close">×</button>
-          <h2>
-            {isDailyMode
-              ? 'Daily Challenge - Missed It'
-              : gaveUp ? 'You gave up!' : 'You ran out of guesses!'}
-          </h2>
-          <img src={correctAnswer?.silhouette} alt="Player" className="mugshot" />
-          <p>The answer was <strong>{correctAnswer?.name}</strong></p>
+      {pendingAbandon && (
+        <div className="modal-card keyline" role="dialog" aria-modal="true" aria-label="Leave this round" tabIndex={-1}>
+          <button className="dismiss-button" onClick={() => setPendingAbandon(null)} aria-label="Close">×</button>
+          <h2>Leave this round?</h2>
+          <p>You can pick it back up until you start playing the next player.</p>
           <div className="modal-actions">
-            {isDailyMode ? (
-              <button onClick={handleShareResult} className="btn btn-primary">
-                {shareCopied ? 'Copied!' : 'Share Result'}
-              </button>
-            ) : (
-              <button
-                onClick={async () => {
-                  setHasLost(false);
-                  await startNewRound();
-                }}
-                className="btn btn-primary"
-              >
-                Play Again
-              </button>
-            )}
+            <button className="btn btn-danger" onClick={confirmAbandon}>Leave round</button>
+            <button className="btn btn-secondary" onClick={() => setPendingAbandon(null)} autoFocus>Keep playing</button>
           </div>
         </div>
       )}
 
       {showDailyResult && dailyRecord && (
-        <div className="modal-card accent-daily">
+        <div className="modal-card keyline accent-daily" role="dialog" aria-modal="true" aria-label="Daily Challenge result" tabIndex={-1}>
           <button onClick={() => setShowDailyResult(false)} className="dismiss-button" aria-label="Close">×</button>
           <h2>Daily Challenge</h2>
-          <p>
-            {dailyRecord.won
-              ? `You solved it in ${dailyRecord.guesses.length}/3 guesses!`
-              : "You didn't get it this time."}
-          </p>
-          {dailyRecord.playerName && (
-            <p>Answer: <strong>{dailyRecord.playerName}</strong></p>
-          )}
-          <div className="share-grid">
-            {dailyRecord.guesses.map((g, i) => (
-              <span key={i}>{g.correct ? '🟩' : '🟥'}</span>
-            ))}
-          </div>
+          <dl className="stat-block stat-block-wide">
+            <div className="stat-row">
+              <dt>Result</dt>
+              <dd>{dailyRecord.won ? `Solved in ${dailyRecord.guesses.length}/3` : 'Missed'}</dd>
+            </div>
+            {dailyRecord.playerName && (
+              <div className="stat-row"><dt>Answer</dt><dd>{dailyRecord.playerName}</dd></div>
+            )}
+            <div className="stat-row">
+              <dt>Guesses</dt>
+              <dd>
+                <div className="share-grid">
+                  {dailyRecord.guesses.map((g, i) => (
+                    <span
+                      key={i}
+                      className={`share-cell ${g.correct ? 'hit' : 'miss'}`}
+                      role="img"
+                      aria-label={g.correct ? 'Correct guess' : 'Wrong guess'}
+                    />
+                  ))}
+                </div>
+              </dd>
+            </div>
+          </dl>
           <div className="modal-actions">
-            <button onClick={handleShareResult} className="btn btn-primary">
-              {shareCopied ? 'Copied!' : 'Share Result'}
+            <button onClick={() => handleShareImage('daily')} className="btn btn-primary" disabled={shareImageState === 'working'}>
+              {SHARE_IMAGE_LABELS[shareImageState]}
+            </button>
+            <button onClick={() => handleShareResult('daily')} className="btn btn-secondary">
+              {shareCopied ? 'Copied!' : shareFailed ? "Couldn't copy" : 'Copy text'}
             </button>
           </div>
-          <p className="daily-next">Come back tomorrow for a new challenge!</p>
+          <p className="daily-next">A new Daily Challenge unlocks tomorrow.</p>
         </div>
       )}
 
       {showStats && (
-        <div className="modal-card">
+        <div className="modal-card keyline" role="dialog" aria-modal="true" aria-label="Your stats" tabIndex={-1}>
           <button onClick={() => setShowStats(false)} className="dismiss-button" aria-label="Close">×</button>
           <h2>Your Stats</h2>
-          <div className="stats-grid">
-            <div className="stat-box">
-              <span className="stat-value">{stats.totalPlayed}</span>
-              <span className="stat-label">Played</span>
-            </div>
-            <div className="stat-box">
-              <span className="stat-value">{winPct}%</span>
-              <span className="stat-label">Win Rate</span>
-            </div>
-            <div className="stat-box">
-              <span className="stat-value">{stats.dailyStreak}</span>
-              <span className="stat-label">Daily Streak</span>
-            </div>
-            <div className="stat-box">
-              <span className="stat-value">{stats.maxDailyStreak}</span>
-              <span className="stat-label">Best Streak</span>
-            </div>
-          </div>
+          <dl className="stat-block stat-block-wide">
+            <div className="stat-row"><dt>Played</dt><dd className="stat-big">{stats.totalPlayed}</dd></div>
+            <div className="stat-row"><dt>Win rate</dt><dd className="stat-big">{winPct}%</dd></div>
+            <div className="stat-row"><dt>Daily streak</dt><dd className="stat-big">{stats.dailyStreak}</dd></div>
+            <div className="stat-row"><dt>Best daily streak</dt><dd className="stat-big">{stats.maxDailyStreak}</dd></div>
+          </dl>
           <p className="daily-next">Stats are saved on this device only.</p>
         </div>
       )}

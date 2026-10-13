@@ -8,16 +8,25 @@ export function usePlayerSearch(query) {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  // The query the current results/error belong to. Callers compare it with
+  // the live query to tell "still searching" from "searched, found nothing".
+  const [settledQuery, setSettledQuery] = useState('');
 
   useEffect(() => {
     if (!query || query.length < 2) {
       setResults([]);
+      setError(null);
       return;
     }
+
+    // A slow response for an earlier keystroke must never overwrite the
+    // results for the current query.
+    let cancelled = false;
 
     async function searchPlayers() {
       try {
         setLoading(true);
+        setError(null);
         const response = await fetch(
           `${API_BASE_URL}/search?q=${encodeURIComponent(query)}`
         );
@@ -27,19 +36,28 @@ export function usePlayerSearch(query) {
         }
 
         const data = await response.json();
+        if (cancelled) return;
         setResults(data);
       } catch (err) {
+        if (cancelled) return;
+        setResults([]);
         setError(err.message);
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setSettledQuery(query);
+        }
       }
     }
 
     const debounce = setTimeout(searchPlayers, 300);
-    return () => clearTimeout(debounce);
+    return () => {
+      cancelled = true;
+      clearTimeout(debounce);
+    };
   }, [query]);
 
-  return { results, loading, error };
+  return { results, loading, error, settledQuery };
 }
 
 // Hook to fetch the list of teams (for the filter dropdown)
@@ -150,5 +168,8 @@ export function useDailyPlayer() {
     }
   };
 
-  return { loading, error, fetchDailyPlayer };
+  // Lets the caller drop a stale error once other requests are working again.
+  const clearError = () => setError(null);
+
+  return { loading, error, fetchDailyPlayer, clearError };
 }

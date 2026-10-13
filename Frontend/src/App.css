@@ -2,70 +2,106 @@
    Design tokens
    ========================================================================== */
 :root {
-  --bg-base: #0b0b10;
-  --bg-glow-1: radial-gradient(circle at 15% 0%, rgba(104, 59, 194, 0.16), transparent 45%);
-  --bg-glow-2: radial-gradient(circle at 85% 100%, rgba(104, 59, 194, 0.12), transparent 45%);
+  /* Palette: the back of a hockey card. Mid-tone cardboard stock with
+     paper-white printed boxes, near-black blue ink, one ink-blue action
+     colour and a spot red for danger. Values are the hex of the OKLCH
+     source in the comment so they work in every browser; every text and
+     background pair was checked to WCAG AA (weakest: muted text on stock,
+     4.54:1). Role names are unchanged so existing rules inherit it. */
+  --bg-base: #bfbfaf;          /* stock        oklch(0.80 0.022 108) */
 
-  --surface: #16161d;
-  --surface-raised: #1d1e27;
-  --surface-sunken: #101015;
+  --surface: #e6e5db;          /* paper        oklch(0.92 0.014 102) */
+  --surface-raised: #f0efe7;   /* paper, lit   oklch(0.95 0.011 100) */
+  --surface-sunken: #d2d2c3;   /* paper, well  oklch(0.86 0.020 106) */
 
-  --border: #2a2b36;
-  --border-strong: #3a3b4a;
+  --border: #878876;           /* hairline     oklch(0.62 0.025 108) */
+  --border-strong: #2c394a;    /* ink rule     oklch(0.34 0.035 255) */
 
-  --accent: #683bc2;
-  --accent-hover: #7c4dff;
-  --accent-soft: rgba(104, 59, 194, 0.16);
-  --accent-glow: rgba(104, 59, 194, 0.35);
+  --ink: #0d1928;              /*              oklch(0.21 0.035 255) */
+  --accent: #194292;           /* ink blue     oklch(0.40 0.14 262) */
+  --accent-hover: #052d7b;     /*              oklch(0.33 0.14 262) */
+  --accent-soft: #c1d2ef;      /*              oklch(0.86 0.045 262) */
+  --on-accent: #f6f5ef;        /* text on --accent and --danger */
 
-  --text-primary: #f5f1e8;
-  --text-secondary: #b3b3c0;
-  --text-muted: #7a7a88;
+  --text-primary: #0d1928;
+  --text-secondary: #2c394a;   /*              oklch(0.34 0.035 255) */
+  --text-muted: #414e5f;       /*              oklch(0.42 0.032 255) */
 
-  --success: #22c55e;
-  --success-soft: rgba(34, 197, 94, 0.14);
-  --danger: #ef4444;
-  --danger-hover: #dc2626;
-  --danger-soft: rgba(239, 68, 68, 0.14);
-  --danger-glow: rgba(239, 68, 68, 0.4);
+  --success: #005827;          /*              oklch(0.40 0.11 152) */
+  --success-soft: #b8e0c1;     /*              oklch(0.87 0.06 152) */
+  --danger: #b00c15;           /*              oklch(0.48 0.19 27) */
+  --danger-hover: #9b0000;     /*              oklch(0.42 0.19 27) */
+  --danger-soft: #f7ccc6;      /*              oklch(0.88 0.05 27) */
+
+  /* Gold is a trophy and Daily Challenge colour only: a fill on ink, and a
+     dark mustard for text and rules on paper. */
+  --gold: #e7b643;             /*              oklch(0.80 0.14 85) */
+  --gold-ink: #633f00;         /*              oklch(0.40 0.09 75) */
+
+  --scrim: rgba(13, 25, 40, 0.55);
 
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 22px;
 
-  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.45);
-  --shadow-glow: 0 0 0 1px var(--border), 0 12px 32px rgba(0, 0, 0, 0.45);
+  /* Elevation is declared once, by a border. Shadows are off: a printed
+     card lies flat, and a border plus a soft shadow reads as a ghost card. */
+  --shadow-sm: none;
+  --shadow-md: none;
 
   --space-1: clamp(4px, 0.5vh, 6px);
   --space-2: clamp(8px, 1vh, 12px);
   --space-3: clamp(12px, 1.6vh, 18px);
   --space-4: clamp(16px, 2.2vh, 24px);
   --space-5: clamp(24px, 3vh, 36px);
+
+  /* Type roles. Fixed rem steps (not viewport-fluid) so text respects the
+     user's browser zoom and font settings. One family, Archivo, in two
+     voices: a condensed gothic for titles, figures and data, and normal
+     width for anything read as prose. */
+  --fs-meta: 0.8125rem;    /* chips, footer, small labels */
+  --fs-data: 0.875rem;     /* career-timeline years */
+  --fs-ui: 0.9375rem;      /* controls and secondary copy */
+  --fs-body: 1rem;         /* clues, dialog prose, inputs */
+  --fs-lead: 1.125rem;     /* primary action, close button */
+  --fs-title-sm: 1.5rem;   /* dialog headings */
+  --fs-title: 2rem;        /* result headings */
+
+  --stretch-display: 70%;  /* titles and figures */
+  --stretch-data: 80%;     /* years, labels, hint buttons */
+  --tracking-label: 0.06em;
+
+  /* Spacing for the round screen (4px base). */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
 }
 
 /* ==========================================================================
    Root layout
    ========================================================================== */
-/* The glow lives on `body` (full viewport width) rather than #root, so on
-   very wide monitors the space outside the content column reads as
-   intentional atmosphere instead of a blank strip reserved for something
-   that isn't there. */
+/* The ground lives on `body` (full viewport width) rather than #root, so on
+   very wide monitors the space outside the content column is the same stock
+   as the page. */
 body {
-  background:
-    var(--bg-glow-1),
-    var(--bg-glow-2),
-    var(--bg-base);
+  background: var(--bg-base);
 }
 
 #root {
   max-width: 1680px;
   margin: 0 auto;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-3) clamp(0.8rem, 2vw, 2rem) var(--space-5);
+  padding:
+    max(var(--space-3), env(safe-area-inset-top))
+    max(clamp(0.8rem, 2vw, 2rem), env(safe-area-inset-right))
+    max(var(--space-5), env(safe-area-inset-bottom))
+    max(clamp(0.8rem, 2vw, 2rem), env(safe-area-inset-left));
 }
 
 * {
@@ -78,10 +114,29 @@ body {
   text-align: center;
 }
 
+.footer-support {
+  margin-bottom: var(--sp-2) !important;
+}
+
+.footer-support a {
+  color: var(--accent-hover);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .site-footer p {
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: var(--fs-meta);
   line-height: 1.5;
   max-width: 640px;
   margin-inline: auto;
@@ -103,42 +158,42 @@ body {
   height: auto;
   user-select: none;
   pointer-events: none;
-  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.5));
+  filter: none;
 }
 
-.icon-button {
-  width: clamp(30px, 3.4vw, 38px);
-  height: clamp(30px, 3.4vw, 38px);
-  padding: 0;
-  display: flex;
+.header-button {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--surface-raised);
-  border: 1px solid var(--border-strong);
-  color: var(--text-secondary);
+  gap: 6px;
+  height: 2.25rem;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--text-primary);
+  font-size: var(--fs-ui);
   font-weight: 700;
-  font-size: clamp(1rem, 1.6vw, 1.2rem);
   line-height: 1;
   cursor: pointer;
-  text-decoration: none;
   transition: all 0.2s ease;
 }
 
-.icon-button:hover {
-  border-color: var(--accent);
-  color: var(--accent-hover);
+@media (hover: hover) {
+  .header-button:hover {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
 }
 
-.donate-button {
+.help-mark {
+  font-size: var(--fs-lead);
+}
+
+.header-actions-left {
   position: absolute;
   top: var(--space-2);
   left: 0;
-}
-
-.donate-button:hover {
-  border-color: #e0b23c;
-  color: #e0b23c;
+  display: flex;
 }
 
 .header-actions-right {
@@ -150,21 +205,40 @@ body {
 }
 
 .daily-button {
-  display: block;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   padding: clamp(7px, 1.1vh, 10px) clamp(1.2rem, 3vw, 2rem);
   border: 1px solid var(--accent);
   border-radius: var(--radius-sm);
   background: var(--accent-soft);
   color: var(--text-primary);
   cursor: pointer;
-  font-size: clamp(0.78rem, 1.1vw, 0.92rem);
+  font-size: var(--fs-ui);
   font-weight: 700;
   transition: all 0.2s ease;
 }
 
-.daily-button:hover:not(:disabled) {
-  background: var(--accent);
+@media (hover: hover) {
+  .daily-button:hover:not(:disabled) {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+}
+
+.daily-meta {
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1.2;
+}
+
+.daily-result + .daily-streak::before {
+  content: ' · ';
+}
+
+.daily-button.completed .daily-meta {
+  color: var(--success);
 }
 
 .daily-button.completed {
@@ -179,124 +253,50 @@ body {
 }
 
 /* ==========================================================================
-   Panels (shared card surface for the three columns)
+   Round screen pieces (the card layout itself is further down)
    ========================================================================== */
-.panel {
-  background: linear-gradient(180deg, var(--surface-raised), var(--surface));
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-}
-
-/* ==========================================================================
-   Main layout - grid of three panels
-   ========================================================================== */
-.main-content {
-  display: grid;
-  grid-template-columns: minmax(240px, 400px) minmax(300px, 500px) minmax(240px, 400px);
-  justify-content: center;
-  align-items: start;
-  gap: var(--space-4);
-}
-
-/* ---- Teams panel ---- */
-.team-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-4) var(--space-3);
-}
-
-.teams-logo,
-.hint-logo,
-.guess-logo {
-  width: clamp(90px, 9vw, 130px);
-  height: auto;
-  user-select: none;
-  pointer-events: none;
-}
-
-.team-list {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-content: flex-start;
-  gap: var(--space-2);
-  width: 100%;
-  min-height: clamp(140px, 20vh, 260px);
-  max-height: clamp(220px, 32vh, 520px);
-  overflow-y: auto;
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  border: 1px solid var(--border);
-}
-
-.team-hint {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: clamp(38px, 5vw, 58px);
-}
-
-.team-logo {
-  width: clamp(32px, 4.2vw, 52px);
-  height: clamp(32px, 4.2vw, 52px);
-  object-fit: contain;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
-  user-select: none;
-  pointer-events: none;
-}
-
 .team-years {
-  font-size: clamp(0.55rem, 0.75vw, 0.72rem);
+  font-size: var(--fs-data);
   color: var(--text-secondary);
-  text-align: center;
-  margin-top: var(--space-1);
+  text-align: right;
+  font-stretch: var(--stretch-data);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .team-empty {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: var(--fs-body);
   padding: var(--space-4) var(--space-2);
 }
 
-/* ---- Center game panel ---- */
-.main-game-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3);
-}
-
-.player-mug {
-  width: clamp(120px, 13vw, 190px);
-  height: clamp(150px, 16vh, 230px);
-  border: 2px solid var(--border-strong);
-  border-radius: var(--radius-md);
-  object-fit: cover;
-  background: var(--surface-sunken);
-  user-select: none;
-  pointer-events: none;
-  box-shadow: var(--shadow-sm);
-}
-
 /* Buttons */
-.buttons-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  width: 100%;
-}
-
 .random-error {
   color: var(--danger);
-  font-size: clamp(0.72rem, 1vw, 0.85rem);
+  font-size: var(--fs-ui);
   text-align: center;
   margin: 0;
+}
+
+.error-row {
+  margin-top: var(--sp-3);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2) var(--sp-3);
+}
+
+.error-row p {
+  margin: 0;
+}
+
+.modal-card:focus,
+.search-overlay:focus,
+.filter-overlay:focus,
+.mode-picker-overlay:focus {
+  outline: none;
 }
 
 .btn {
@@ -320,53 +320,38 @@ body {
 }
 
 .btn-primary {
-  width: clamp(180px, 20vw, 260px);
-  padding: clamp(10px, 1.6vh, 14px) var(--space-3);
-  font-size: clamp(0.9rem, 1.3vw, 1.05rem);
+  padding: var(--sp-3) var(--sp-6);
+  font-size: var(--fs-lead);
   background: var(--accent);
-  color: var(--text-primary);
-  box-shadow: 0 6px 18px var(--accent-glow);
+  color: var(--on-accent);
+  box-shadow: none;
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: var(--accent-hover);
-}
-
-.secondary-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-2);
-  width: 100%;
+@media (hover: hover) {
+  .btn-primary:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
 }
 
 .btn-secondary {
-  flex: 1;
-  min-width: 96px;
-  padding: clamp(8px, 1.3vh, 11px) var(--space-2);
-  font-size: clamp(0.78rem, 1.1vw, 0.92rem);
+  min-height: 2.5rem;
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-ui);
   background: var(--surface-raised);
   color: var(--text-primary);
   border-color: var(--border-strong);
 }
 
-/* Used standalone (not inside .secondary-actions), so it needs its own
-   flex reset - the inherited `flex: 1` is meant for a flex ROW and would
-   otherwise stretch this button vertically inside .buttons-section's
-   flex COLUMN. */
-.custom-player-btn {
-  flex: none;
-  width: auto;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent-hover);
+@media (hover: hover) {
+  .btn-secondary:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent-hover);
+  }
 }
 
 .btn-ghost {
   padding: clamp(4px, 0.8vh, 6px) var(--space-2);
-  font-size: clamp(0.72rem, 1vw, 0.82rem);
+  font-size: var(--fs-ui);
   background: transparent;
   color: var(--text-muted);
   border: none;
@@ -375,64 +360,81 @@ body {
   font-weight: 500;
 }
 
-.btn-ghost:hover:not(:disabled) {
-  color: var(--text-secondary);
+@media (hover: hover) {
+  .btn-ghost:hover:not(:disabled) {
+    color: var(--text-secondary);
+  }
 }
 
 .btn-danger {
   padding: clamp(8px, 1.3vh, 11px) var(--space-3);
-  font-size: clamp(0.78rem, 1.1vw, 0.92rem);
+  font-size: var(--fs-ui);
   font-weight: 700;
   background: var(--danger);
-  color: white;
+  color: var(--on-accent);
   border-color: var(--danger);
-  box-shadow: 0 4px 14px var(--danger-soft);
+  box-shadow: none;
   transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
 }
 
-.btn-danger:hover:not(:disabled) {
-  background: var(--danger-hover);
-  border-color: var(--danger-hover);
-  box-shadow: 0 6px 22px var(--danger-glow);
+@media (hover: hover) {
+  .btn-danger:hover:not(:disabled) {
+    background: var(--danger-hover);
+    border-color: var(--danger-hover);
+    box-shadow: none;
+  }
 }
 
 /* Hint trigger buttons */
-.hint-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  justify-content: center;
-  width: 100%;
-}
-
 .hint-button {
-  flex: 1;
-  min-width: clamp(48px, 8vw, 72px);
-  padding: clamp(7px, 1.2vh, 10px) var(--space-1);
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: var(--sp-2) var(--sp-1);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   background: var(--surface-raised);
   color: var(--text-primary);
   cursor: pointer;
-  font-size: clamp(0.68rem, 1vw, 0.82rem);
-  font-weight: 600;
+  font-size: var(--fs-ui);
   transition: all 0.2s ease;
+  font-stretch: var(--stretch-data);
+  font-weight: 600;
 }
 
-.hint-button:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent-hover);
+@media (hover: hover) {
+  .hint-button:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent-hover);
+  }
 }
 
+/* Three states, told apart by fill, border weight and line style (not by
+   colour alone): revealed = filled, next = heavy accent border, locked = dashed. */
 .hint-button.revealed {
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--text-primary);
 }
 
+.hint-button.available {
+  border: 2px solid var(--accent);
+  color: var(--accent-hover);
+  padding: calc(var(--sp-2) - 1px) 0;
+}
+
 .hint-button:disabled {
-  opacity: 0.4;
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--border);
+  color: var(--text-muted);
   cursor: not-allowed;
+}
+
+.hint-button.revealed:disabled {
+  background: var(--accent-soft);
+  border-style: solid;
+  border-color: var(--accent);
+  color: var(--text-primary);
 }
 
 /* Search box (shared by Guess + Custom Player) */
@@ -454,8 +456,12 @@ body {
 .search-overlay h3 {
   margin: 0 0 var(--space-3);
   color: var(--text-primary);
-  font-size: clamp(1rem, 1.6vw, 1.2rem);
+  font-size: var(--fs-title-sm);
   text-align: center;
+  font-stretch: var(--stretch-display);
+  font-weight: 800;
+  line-height: 1.1;
+  text-wrap: balance;
 }
 
 .group {
@@ -476,14 +482,16 @@ body {
   outline: none;
   color: var(--text-primary);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  font-size: clamp(0.85rem, 1.2vw, 1.05rem);
+  font-size: var(--fs-body);
 }
 
 .input::placeholder {
   color: var(--text-muted);
 }
-.input:hover {
-  border-color: var(--border-strong);
+@media (hover: hover) {
+  .input:hover {
+    border-color: var(--border-strong);
+  }
 }
 .input:focus {
   border-color: var(--accent);
@@ -513,10 +521,32 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 2.75rem;
   padding: var(--space-2) var(--space-3);
+  border: none;
   border-bottom: 1px solid var(--border);
+  background: transparent;
   color: var(--text-primary);
-  font-size: clamp(0.75rem, 1vw, 0.9rem);
+  font-family: inherit;
+  font-size: var(--fs-ui);
+  text-align: left;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .dropdown-item:hover:not(:disabled) {
+    background: var(--surface);
+  }
+}
+
+.dropdown-item:disabled {
+  cursor: not-allowed;
+}
+
+.dropdown-item:disabled .select-button {
+  opacity: 0.5;
 }
 
 .dropdown-item:last-child {
@@ -530,59 +560,152 @@ body {
 }
 
 .dropdown-item-years {
-  font-size: clamp(0.65rem, 0.85vw, 0.75rem);
+  font-size: var(--fs-meta);
   color: var(--text-secondary);
+  font-stretch: var(--stretch-data);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .dropdown-empty {
   padding: var(--space-3);
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: var(--fs-ui);
   text-align: center;
 }
 
+/* The visible "Select" cue; the whole row is the button. */
 .select-button {
+  flex-shrink: 0;
+  min-width: 4.5rem;
   padding: clamp(4px, 0.7vh, 7px) clamp(10px, 1.4vw, 14px);
   background-color: var(--accent);
-  color: white;
-  border: none;
+  color: var(--on-accent);
   border-radius: var(--radius-sm);
-  cursor: pointer;
   transition: background-color 0.2s ease;
-  font-size: clamp(0.65rem, 0.95vw, 0.8rem);
+  font-size: var(--fs-meta);
   font-weight: 600;
-}
-.select-button:hover {
-  background-color: var(--accent-hover);
+  text-align: center;
 }
 
-/* ---- Hints panel (right column) ---- */
-.hint-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-4) var(--space-3);
+@media (hover: hover) {
+  .dropdown-item:hover:not(:disabled) .select-button {
+    background-color: var(--accent-hover);
+  }
 }
 
+/* ---- Hint text (trivia box) ---- */
 .hint-block-container {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   width: 100%;
-  max-height: clamp(220px, 30vh, 400px);
-  overflow-y: auto;
+  /* No height cap: unlocked hints are the clues and must never sit behind a
+     nested scrollbar. */
 }
 
-.hint-block {
+/* The unlocked clues are the stat block on the back of the card: a small-caps
+   label, then the value. The same rows carry the Stats and Daily dialogs. */
+.stat-block {
+  margin: 0;
+  padding: var(--sp-1) var(--sp-3);
   background: var(--surface-sunken);
-  color: var(--text-primary);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
-  font-size: clamp(0.7rem, 0.95vw, 0.88rem);
-  text-align: left;
   border: 1px solid var(--border);
-  line-height: 1.45;
+  border-radius: var(--radius-sm);
+  text-align: left;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr);
+  gap: var(--sp-3);
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.stat-row dt {
+  font-size: var(--fs-meta);
+  font-stretch: var(--stretch-data);
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.stat-row dd {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--fs-body);
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px var(--sp-4);
+}
+
+.stat-figure {
+  white-space: nowrap;
+}
+
+.stat-key {
+  margin-right: 2px;
+  font-size: var(--fs-meta);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+/* In dialogs the label sits left and the value right. */
+.stat-block-wide {
+  width: 100%;
+}
+
+.stat-block-wide .stat-row {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.stat-block-wide .stat-row dd {
+  text-align: right;
+}
+
+.stat-big {
+  font-size: var(--fs-title-sm);
+  font-stretch: var(--stretch-display);
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--accent-hover);
+}
+
+.resume-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2) var(--sp-4);
+  margin-bottom: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+}
+
+.resume-notice p {
+  margin: 0;
+  font-size: var(--fs-ui);
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .trophy-row {
@@ -597,9 +720,9 @@ body {
   gap: 6px;
   padding: 5px var(--space-2);
   background: var(--surface-sunken);
-  border: 1px solid #7a5a1e;
+  border: 1px solid var(--gold-ink);
   border-radius: var(--radius-sm);
-  font-size: clamp(0.62rem, 0.85vw, 0.75rem);
+  font-size: var(--fs-meta);
   color: var(--text-primary);
   line-height: 1.2;
 }
@@ -611,8 +734,8 @@ body {
   object-fit: cover;
   object-position: top center;
   border-radius: 4px;
-  background: #0a0a0d;
-  color: #e0b23c;
+  background: var(--ink);
+  color: var(--gold);
 }
 
 svg.trophy-icon {
@@ -627,45 +750,27 @@ svg.trophy-icon {
 
 .trophy-count {
   font-weight: 700;
-  color: #e0b23c;
+  color: var(--gold-ink);
 }
 
 .hint-block-empty {
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: var(--fs-ui);
   text-align: center;
   padding: var(--space-3) 0;
 }
 
-/* ---- Guess history (compact - lives in the center column so it's never
-   below the fold behind the three-panel row) ---- */
-.guess-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-1);
-  width: 100%;
-}
-
-.guess-section .guess-logo {
-  width: clamp(60px, 6vw, 90px);
-}
-
-.guess-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  justify-content: center;
-  width: 100%;
-}
-
+/* ---- Guess history chips ---- */
 .guess-chip {
-  padding: clamp(5px, 0.9vh, 8px) clamp(8px, 1.2vw, 12px);
+  padding: var(--sp-1) var(--sp-3);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-strong);
   background: var(--surface-raised);
   font-weight: 600;
-  font-size: clamp(0.66rem, 0.9vw, 0.8rem);
+  font-size: var(--fs-meta);
   color: var(--text-primary);
   white-space: nowrap;
 }
@@ -683,12 +788,627 @@ svg.trophy-icon {
 }
 
 /* ==========================================================================
+   Round screen: one card, the back of a hockey card
+   The career timeline is the stat table, the hints are the trivia box, and
+   the face-down front is the "?" tile. Desktop shows everything at once in
+   two columns. Phones get one column, Guess pinned to the bottom, the hints
+   in a sheet and the secondary actions in a menu.
+   ========================================================================== */
+.top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+}
+
+/* The buttons carry a legacy auto margin for centring; in a flex row it
+   would spread them apart. */
+.top-actions > * {
+  margin: 0;
+}
+
+.card {
+  --card-pad: var(--sp-6);
+  width: 100%;
+  max-width: 62rem;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 11rem minmax(0, 1fr);
+  grid-template-areas:
+    "photo timeline"
+    "photo tabs"
+    "photo hints"
+    "bar   bar";
+  align-items: start;
+  gap: var(--sp-4) var(--sp-6);
+  padding: var(--card-pad);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+}
+
+.card-label {
+  margin: 0 0 var(--sp-2);
+  padding-bottom: var(--sp-1);
+  border-bottom: 1px solid var(--border-strong);
+  font-size: var(--fs-meta);
+  font-stretch: var(--stretch-data);
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* ---- Photo window and guesses ---- */
+.card-photo {
+  grid-area: photo;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+/* The photo window is a card: face-down it shows the "?", face-up the player. */
+.card-flip {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  perspective: 900px;
+}
+
+.card-flip .flip-face {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.card-flip .flip-front {
+  transform: rotateY(-180deg);
+}
+
+.card-flip.face-up .flip-back {
+  transform: rotateY(180deg);
+}
+
+.card-flip.face-up .flip-front {
+  transform: rotateY(0deg);
+}
+
+/* The result lands on the card after the flip. */
+.round-result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2) var(--sp-4);
+  margin-bottom: var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid;
+  border-radius: var(--radius-sm);
+  animation: fadeInUp 0.3s ease-out 0.45s both;
+}
+
+.round-result.won {
+  background: var(--success-soft);
+  border-color: var(--success);
+}
+
+.round-result.lost {
+  background: var(--danger-soft);
+  border-color: var(--danger);
+}
+
+.round-result-text {
+  min-width: 0;
+}
+
+.round-result p {
+  margin: 0;
+}
+
+.round-result-title {
+  font-size: var(--fs-title-sm);
+  font-stretch: var(--stretch-display);
+  font-weight: 800;
+  line-height: 1.1;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.round-result.won .round-result-title {
+  color: var(--success);
+}
+
+.round-result.lost .round-result-title {
+  color: var(--danger);
+}
+
+.round-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.round-result-name {
+  margin-top: 2px;
+  font-size: var(--fs-body);
+  color: var(--text-primary);
+}
+
+.player-mug {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--ink);
+  user-select: none;
+  pointer-events: none;
+}
+
+.guess-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.guess-chip.empty {
+  border-style: dashed;
+  border-color: var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ---- Career timeline (the stat table) ---- */
+.card-timeline {
+  grid-area: timeline;
+}
+
+/* The career as a stat table: one row per tenure, oldest first. Wide cards
+   flow it into two columns, read down the first column and then the second. */
+.team-list {
+  columns: 17rem;
+  column-gap: var(--sp-6);
+  min-height: 4rem;
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+}
+
+.team-hint {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  break-inside: avoid;
+}
+
+.team-hint:last-child {
+  border-bottom: none;
+}
+
+.team-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-ui);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.team-logo {
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* ---- Hint tabs and the trivia box ---- */
+.hint-tabs {
+  grid-area: tabs;
+}
+
+.hint-tab-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--sp-1);
+}
+
+.card-hints {
+  grid-area: hints;
+}
+
+.menu-backdrop {
+  display: none;
+}
+
+/* ---- Action bar ---- */
+.card-bar {
+  grid-area: bar;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border);
+}
+
+.guess-cta {
+  position: relative;
+  min-width: 13rem;
+  background: var(--ink);
+  border-color: var(--ink);
+  font-stretch: var(--stretch-display);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* The printed keyline inside a card's edge. */
+.guess-cta::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(246, 245, 239, 0.35);
+  border-radius: 5px;
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .guess-cta:hover:not(:disabled) {
+    background: var(--text-secondary);
+  }
+}
+
+.menu-toggle {
+  display: none;
+}
+
+.card-menu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+}
+
+.give-up {
+  color: var(--danger);
+}
+
+@media (hover: hover) {
+  .give-up:hover:not(:disabled) {
+    color: var(--danger-hover);
+  }
+}
+
+/* ---- Compact screens: phones, and windows too short for the full card ----
+   Guess stays pinned to the bottom, the hints move to a sheet and the
+   secondary actions to a menu. */
+@media (max-width: 759px), (max-height: 520px) {
+  #root {
+    min-height: 100dvh;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .header-section {
+    padding-top: 0;
+  }
+
+  .mode-description {
+    display: none;
+  }
+
+  .top-actions > .daily-button {
+    flex: 0 1 auto;
+  }
+
+  .top-actions > .mode-pill {
+    flex: 1 1 auto;
+    max-width: 16rem;
+  }
+
+  .hint-tabs .card-label {
+    display: none;
+  }
+
+  .menu-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 9;
+  }
+
+  /* Guess stays reachable by thumb. */
+  .card-bar {
+    align-self: end;
+    position: sticky;
+    bottom: 0;
+    z-index: 10; /* above the card, below the modal overlay (15) */
+    margin: 0 calc(var(--card-pad) * -1) calc(var(--card-pad) * -1);
+    padding: var(--sp-3) var(--card-pad) calc(var(--sp-3) + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--border-strong);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    justify-content: stretch;
+  }
+
+  .guess-cta {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 5rem;
+  }
+
+  .card-menu {
+    display: none;
+    position: absolute;
+    right: var(--card-pad);
+    bottom: calc(100% + var(--sp-2));
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 13rem;
+    padding: var(--sp-2);
+    background: var(--surface-raised);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+  }
+
+  .card-menu.open {
+    display: flex;
+  }
+
+  /* The search box sits near the top so the on-screen keyboard (which iOS
+     does not resize the page for) never covers the results. */
+  .search-overlay {
+    top: max(var(--sp-4), env(safe-area-inset-top));
+    transform: translateX(-50%);
+    width: min(94vw, 28rem);
+  }
+
+  .dropdown {
+    max-height: min(40dvh, 16rem);
+  }
+}
+
+/* ---- Phones: one column ---- */
+@media (max-width: 759px) {
+  .puck-logo {
+    width: 5.5rem;
+  }
+
+  .top-actions > * {
+    max-width: 16rem;
+  }
+
+  .card {
+    --card-pad: var(--sp-4);
+    flex: 1;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "photo"
+      "timeline"
+      "tabs"
+      "hints"
+      "bar";
+    grid-template-rows: auto auto auto auto 1fr;
+    align-content: start;
+    gap: var(--sp-3);
+  }
+
+  /* Unlocked clues stay on the card, where the phone has room for them. */
+  .card-hints .stat-row {
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    gap: var(--sp-2);
+    padding: 6px 0;
+  }
+
+  .card-hints .stat-row dd {
+    font-size: var(--fs-ui);
+  }
+
+  /* Keep a newly unlocked row clear of the pinned Guess bar when it scrolls into view. */
+  .card-hints .stat-row {
+    scroll-margin-bottom: 6.5rem;
+  }
+
+  .card-hints .hint-block-empty {
+    padding: var(--sp-1) 0;
+  }
+
+  /* The photo window grows when it flips; the guess column beside it is
+     about as tall as the grown tile, so the page does not get longer. */
+  .card-photo {
+    display: grid;
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+    align-items: start;
+    gap: var(--sp-3);
+    transition: grid-template-columns 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .card-photo:has(.card-flip.face-up) {
+    grid-template-columns: 7rem minmax(0, 1fr);
+  }
+
+  .team-hint {
+    grid-template-columns: 1.75rem minmax(0, 1fr) auto;
+    gap: var(--sp-2);
+    padding: 4px 0;
+  }
+
+  .team-logo {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+}
+
+/* ---- Phones on their side: the two-column card with a compact header ---- */
+@media (min-width: 760px) and (max-height: 520px) {
+  .puck-logo {
+    width: 3.5rem;
+  }
+
+  .card {
+    --card-pad: var(--sp-3);
+    grid-template-columns: 6rem minmax(0, 1fr);
+    grid-template-areas:
+      "photo timeline"
+      "photo tabs"
+      "photo hints"
+      "bar   bar";
+    gap: var(--sp-3) var(--sp-4);
+  }
+
+  .card-photo {
+    gap: var(--sp-2);
+  }
+
+  .guess-slots .card-label {
+    display: none;
+  }
+
+  .team-list {
+    min-height: 0;
+  }
+}
+
+/* ---- Touch: bigger targets for anyone using a finger ---- */
+@media (pointer: coarse) {
+  .footer-support a {
+    display: inline-block;
+    padding: 14px 8px;
+  }
+
+  .header-button {
+    height: 2.75rem;
+  }
+
+  .btn-secondary,
+  .btn-ghost,
+  .daily-button,
+  .mode-pill {
+    min-height: 2.75rem;
+  }
+
+  .dropdown-item {
+    min-height: 3.25rem;
+  }
+
+  .dismiss-button {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .mode-button,
+  .apply-filters-btn,
+  .clear-filters-btn {
+    min-height: 2.75rem;
+  }
+
+  .modal-card h2 {
+    padding-inline: 3.5rem;
+  }
+}
+
+/* ---- Narrow phones: Daily and Mode share one row ---- */
+@media (max-width: 400px) {
+  .top-actions {
+    flex-wrap: nowrap;
+  }
+
+  .daily-button,
+  .mode-pill {
+    padding-inline: var(--sp-3);
+    white-space: nowrap;
+  }
+
+  .mode-pill {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* ---- Very narrow phones (320-360px) ---- */
+@media (max-width: 360px) {
+  .card {
+    --card-pad: var(--sp-3);
+  }
+
+  .puck-logo {
+    width: 4.5rem;
+  }
+
+  /* "Daily" and the full mode name fit the row; the long label returns on wider screens. */
+  .daily-long,
+  .daily-result {
+    display: none;
+  }
+
+  .daily-result + .daily-streak::before {
+    content: none;
+  }
+
+  .hint-button {
+    font-size: var(--fs-meta);
+  }
+}
+
+/* Once the Daily is done, phones keep the streak on the button; the full
+   label and the result are one tap away in the Daily dialog. */
+@media (max-width: 430px) {
+  .daily-done-long,
+  .daily-result {
+    display: none;
+  }
+
+  .daily-result + .daily-streak::before {
+    content: none;
+  }
+}
+
+@media (max-width: 340px) {
+  .mode-prefix {
+    display: none;
+  }
+}
+
+/* Long team names wrap to a second line instead of being cut off. */
+@media (max-width: 400px) {
+  .team-name {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+    line-height: 1.2;
+    font-size: var(--fs-data);
+  }
+}
+
+/* ==========================================================================
    Modals (welcome / new player options / filter / win / lose)
    ========================================================================== */
 .overlay-screen {
   position: fixed;
   inset: 0;
-  background: rgba(5, 5, 8, 0.6);
+  background: var(--scrim);
   backdrop-filter: blur(6px);
   z-index: 15;
 }
@@ -700,8 +1420,10 @@ svg.trophy-icon {
   text-align: center;
   border: 1px solid var(--border-strong);
   box-shadow: var(--shadow-md);
-  max-width: clamp(320px, 80vw, 520px);
-  max-height: 90vh;
+  width: max-content;
+  min-width: min(18rem, calc(100vw - 2rem));
+  max-width: min(calc(100vw - 2rem), 32rem);
+  max-height: 90dvh;
   overflow-y: auto;
   position: fixed;
   top: 50%;
@@ -715,13 +1437,6 @@ svg.trophy-icon {
   padding: var(--space-5) var(--space-4);
 }
 
-.modal-card.accent-success {
-  border-color: var(--success);
-}
-.modal-card.accent-success h2 {
-  color: var(--success);
-}
-
 .modal-card.accent-danger {
   border-color: var(--danger);
 }
@@ -730,25 +1445,31 @@ svg.trophy-icon {
 }
 
 .modal-card.accent-daily {
-  border-color: #e0b23c;
+  border-color: var(--gold-ink);
 }
 .modal-card.accent-daily h2 {
-  color: #e0b23c;
+  color: var(--gold-ink);
 }
 
 .modal-card h2 {
   margin: 0;
   color: var(--text-primary);
-  font-size: clamp(1.2rem, 2.4vw, 1.7rem);
+  font-size: var(--fs-title);
   /* Symmetric reserve so a wrapped/centered title never renders under the
      dismiss button sitting in the top-right corner. */
   padding: 0 clamp(32px, 5vw, 48px);
+  font-stretch: var(--stretch-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 1.05;
+  text-wrap: balance;
 }
 
 .modal-card p {
   margin: 0;
   color: var(--text-secondary);
-  font-size: clamp(0.85rem, 1.3vw, 1rem);
+  font-size: var(--fs-body);
 }
 
 .modal-actions {
@@ -760,45 +1481,37 @@ svg.trophy-icon {
 
 .share-grid {
   display: flex;
-  gap: 6px;
-  font-size: clamp(1.4rem, 3vw, 1.8rem);
-  line-height: 1;
+  gap: var(--sp-2);
+}
+
+.share-cell {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-strong);
+}
+
+.share-cell.hit {
+  background: var(--success);
+}
+
+.share-cell.miss {
+  background: var(--danger);
 }
 
 .daily-next {
-  font-size: clamp(0.72rem, 1vw, 0.85rem);
+  font-size: var(--fs-ui);
   color: var(--text-muted);
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-3);
-  width: 100%;
-}
-
-.stat-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-3);
-  background: var(--surface-sunken);
+/* A printed keyline inside the edge, on dialogs that never scroll. */
+.modal-card.keyline::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-}
-
-.stat-value {
-  font-size: clamp(1.4rem, 3vw, 1.9rem);
-  font-weight: 800;
-  color: var(--accent-hover);
-}
-
-.stat-label {
-  font-size: clamp(0.7rem, 1vw, 0.82rem);
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  border-radius: calc(var(--radius-lg) - 6px);
+  pointer-events: none;
 }
 
 .welcome-box {
@@ -814,18 +1527,22 @@ svg.trophy-icon {
 .welcome-box h3 {
   margin: var(--space-2) 0 0;
   color: var(--accent-hover);
-  font-size: clamp(1rem, 1.9vw, 1.2rem);
+  font-size: var(--fs-title-sm);
+  font-stretch: var(--stretch-display);
+  font-weight: 800;
+  line-height: 1.1;
+  text-wrap: balance;
 }
 
 .rules-content {
-  font-size: clamp(0.82rem, 1.3vw, 0.98rem);
+  font-size: var(--fs-body);
   line-height: 1.5;
   color: var(--text-secondary);
 }
 
 .current-mode-note {
   color: var(--text-secondary);
-  font-size: clamp(0.8rem, 1.2vw, 0.92rem);
+  font-size: var(--fs-ui);
   margin: 0 0 var(--space-2);
   padding: var(--space-2) var(--space-3);
   background: var(--accent-soft);
@@ -846,12 +1563,10 @@ svg.trophy-icon {
   margin-bottom: var(--space-1);
 }
 
-.mugshot {
-  width: clamp(90px, 10vw, 140px);
-  height: clamp(110px, 13vw, 180px);
-  object-fit: cover;
-  border: 2px solid var(--border-strong);
-  border-radius: var(--radius-md);
+.rules-content li.rules-sub {
+  list-style: none;
+  margin-left: 1.1rem;
+  margin-bottom: 2px;
 }
 
 .dismiss-button {
@@ -871,13 +1586,15 @@ svg.trophy-icon {
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: clamp(1.1rem, 1.8vw, 1.4rem);
+  font-size: var(--fs-lead);
   line-height: 1;
 }
 
-.dismiss-button:hover {
-  border-color: var(--danger);
-  color: var(--danger);
+@media (hover: hover) {
+  .dismiss-button:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
 }
 
 /* ---- Filter panel ---- */
@@ -915,7 +1632,11 @@ svg.trophy-icon {
 .filter-header h3 {
   color: var(--text-primary);
   margin: 0;
-  font-size: clamp(1.1rem, 2.2vw, 1.4rem);
+  font-size: var(--fs-title-sm);
+  font-stretch: var(--stretch-display);
+  font-weight: 800;
+  line-height: 1.1;
+  text-wrap: balance;
 }
 
 .clear-filters-btn {
@@ -925,13 +1646,15 @@ svg.trophy-icon {
   border: 1px solid var(--danger);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: clamp(0.72rem, 1vw, 0.86rem);
+  font-size: var(--fs-ui);
   font-weight: 600;
   transition: all 0.2s ease;
 }
 
-.clear-filters-btn:hover:not(:disabled) {
-  background: var(--danger-soft);
+@media (hover: hover) {
+  .clear-filters-btn:hover:not(:disabled) {
+    background: var(--danger-soft);
+  }
 }
 
 .filter-content {
@@ -944,45 +1667,51 @@ svg.trophy-icon {
 
 .filter-section {
   margin-bottom: var(--space-3);
-  padding: var(--space-3);
-  background: var(--surface-sunken);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.filter-section:first-child {
+  padding-top: 0;
+  border-top: none;
 }
 
 .filter-section h4 {
   color: var(--accent-hover);
   margin: 0 0 var(--space-2);
-  font-size: clamp(0.9rem, 1.6vw, 1.05rem);
-  font-weight: 700;
+  font-size: var(--fs-ui);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  font-stretch: var(--stretch-data);
+  font-weight: 600;
 }
 
 /* Replaces the old always-visible row of mode buttons - with 13+ modes
-   across three groups, a single pill that opens a picker modal scales much
+   across three groups, a single button that opens a picker modal scales much
    better than a wrapping button row that keeps pushing the game panel
-   further down the page as modes are added. */
+   further down the page as modes are added. Styled like the Daily button. */
 .mode-pill {
   display: block;
-  margin: 0 auto;
-  padding: clamp(6px, 1vh, 9px) clamp(1rem, 2.6vw, 1.6rem);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-full, 999px);
-  background: var(--surface);
+  padding: clamp(7px, 1.1vh, 10px) clamp(1rem, 2.6vw, 1.6rem);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
   color: var(--text-primary);
   cursor: pointer;
-  font-size: clamp(0.78rem, 1.05vw, 0.9rem);
+  font-size: var(--fs-ui);
+  font-weight: 700;
   transition: all 0.2s ease;
 }
 
-.mode-pill:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent-hover);
+@media (hover: hover) {
+  .mode-pill:hover:not(:disabled) {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
 }
 
 .mode-pill:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
@@ -1007,7 +1736,13 @@ svg.trophy-icon {
 
 .mode-picker-overlay h3 {
   margin: 0 0 var(--space-3);
+  padding-right: 3rem; /* clear of the close button */
   color: var(--text-primary);
+  font-size: var(--fs-title-sm);
+  font-stretch: var(--stretch-display);
+  font-weight: 800;
+  line-height: 1.1;
+  text-wrap: balance;
 }
 
 .mode-group {
@@ -1017,10 +1752,11 @@ svg.trophy-icon {
 .mode-group h4 {
   color: var(--accent-hover);
   margin: 0 0 var(--space-2);
-  font-size: clamp(0.85rem, 1.4vw, 1rem);
-  font-weight: 700;
+  font-size: var(--fs-ui);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  font-stretch: var(--stretch-data);
+  font-weight: 600;
 }
 
 .mode-group-grid {
@@ -1036,7 +1772,7 @@ svg.trophy-icon {
   max-width: clamp(320px, 66vw, 720px);
   text-align: center;
   color: var(--text-secondary);
-  font-size: clamp(0.72rem, 1vw, 0.85rem);
+  font-size: var(--fs-ui);
 }
 
 .mode-button {
@@ -1048,20 +1784,22 @@ svg.trophy-icon {
   background: var(--surface);
   color: var(--text-primary);
   cursor: pointer;
-  font-size: clamp(0.74rem, 1vw, 0.86rem);
+  font-size: var(--fs-ui);
   font-weight: 600;
   transition: all 0.2s ease;
 }
 
-.mode-button:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent-hover);
+@media (hover: hover) {
+  .mode-button:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent-hover);
+  }
 }
 
 .mode-button.selected {
   background: var(--accent);
   border-color: var(--accent);
-  color: white;
+  color: var(--on-accent);
 }
 
 .mode-button:disabled {
@@ -1080,6 +1818,10 @@ svg.trophy-icon {
   margin-bottom: 0;
 }
 
+.filter-row .filter-group:only-child {
+  flex-basis: 100%;
+}
+
 .filter-group {
   flex: 1;
   min-width: clamp(120px, 20vw, 180px);
@@ -1091,7 +1833,7 @@ svg.trophy-icon {
 .filter-group label {
   font-weight: 600;
   color: var(--text-secondary);
-  font-size: clamp(0.75rem, 1.1vw, 0.88rem);
+  font-size: var(--fs-ui);
 }
 
 .filter-group input,
@@ -1099,7 +1841,7 @@ svg.trophy-icon {
   padding: clamp(7px, 1vh, 10px) clamp(9px, 1.2vw, 12px);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
-  font-size: clamp(0.78rem, 1.1vw, 0.9rem);
+  font-size: var(--fs-body);
   background: var(--surface);
   color: var(--text-primary);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -1113,9 +1855,11 @@ svg.trophy-icon {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
-.filter-group input:hover,
-.filter-group select:hover {
-  border-color: var(--text-muted);
+@media (hover: hover) {
+  .filter-group input:hover,
+  .filter-group select:hover {
+    border-color: var(--text-muted);
+  }
 }
 
 .filter-group select {
@@ -1143,37 +1887,36 @@ svg.trophy-icon {
 .apply-filters-btn {
   padding: clamp(9px, 1.5vh, 12px) clamp(1.6rem, 3vw, 2.4rem);
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
   border: 1px solid var(--accent);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: clamp(0.85rem, 1.3vw, 1.02rem);
+  font-size: var(--fs-lead);
   font-weight: 700;
   transition: all 0.2s ease;
   min-width: clamp(140px, 20vw, 180px);
 }
 
-.apply-filters-btn:hover:not(:disabled) {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .apply-filters-btn:hover:not(:disabled) {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+    transform: translateY(-1px);
+  }
 }
 
 .filter-content::-webkit-scrollbar,
-.hint-block-container::-webkit-scrollbar,
-.team-list::-webkit-scrollbar {
+.hint-block-container::-webkit-scrollbar {
   width: 6px;
 }
 
 .filter-content::-webkit-scrollbar-track,
-.hint-block-container::-webkit-scrollbar-track,
-.team-list::-webkit-scrollbar-track {
+.hint-block-container::-webkit-scrollbar-track {
   background: transparent;
 }
 
 .filter-content::-webkit-scrollbar-thumb,
-.hint-block-container::-webkit-scrollbar-thumb,
-.team-list::-webkit-scrollbar-thumb {
+.hint-block-container::-webkit-scrollbar-thumb {
   background: var(--border-strong);
   border-radius: 3px;
 }
@@ -1199,55 +1942,60 @@ svg.trophy-icon {
   }
 }
 
+/* ==========================================================================
+   Browser surfaces and pressed state
+   ========================================================================== */
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+input,
+select,
+textarea {
+  accent-color: var(--accent);
+  caret-color: var(--accent);
+}
+
+.dropdown,
+.card-hints,
+.modal-card,
+.filter-overlay,
+.mode-picker-overlay {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* Hover only exists for a mouse; touch gets a pressed state instead. */
+.btn:active:not(:disabled),
+.hint-button:active:not(:disabled),
+.daily-button:active:not(:disabled),
+.mode-pill:active:not(:disabled),
+.header-button:active,
+.dropdown-item:active:not(:disabled),
+.mode-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-in {
     animation: none;
   }
-  .btn {
+  .btn,
+  .card-photo,
+  .card-flip .flip-face {
     transition: none;
+  }
+
+  .round-result {
+    animation: none;
   }
 }
 
 /* ==========================================================================
    Responsive
    ========================================================================== */
-@media (max-width: 900px) {
-  .main-content {
-    grid-template-columns: 1fr;
-    justify-items: center;
-  }
-
-  .team-section,
-  .hint-section {
-    width: 100%;
-    max-width: 480px;
-  }
-
-  .team-section {
-    order: 1;
-  }
-
-  .main-game-section {
-    order: 2;
-    width: 100%;
-    max-width: 480px;
-  }
-
-  .hint-section {
-    order: 3;
-  }
-}
-
 @media (max-width: 480px) {
-  .btn-primary {
-    width: 100%;
-  }
-
-  .player-mug {
-    width: clamp(100px, 18vw, 160px);
-    height: clamp(130px, 22vh, 150px);
-  }
-
   .mode-button {
     min-width: clamp(90px, 40vw, 150px);
   }
@@ -1261,25 +2009,9 @@ svg.trophy-icon {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   }
 
-  .secondary-actions {
-    flex-direction: column;
-  }
-
-  .hint-button {
-    min-width: clamp(56px, 20vw, 90px);
-  }
-
   .filter-overlay {
     width: 95vw;
     max-height: 88vh;
-  }
-
-  .filter-row {
-    flex-direction: column;
-  }
-
-  .filter-group {
-    min-width: 100%;
   }
 
   .filter-header {
@@ -1300,5 +2032,6 @@ svg.trophy-icon {
 
   .filter-footer .clear-filters-btn {
     order: 2;
+    justify-self: center;
   }
 }
