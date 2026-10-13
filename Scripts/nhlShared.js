@@ -295,7 +295,10 @@ export async function extractTeams(seasons) {
     // actually still ongoing, so it needs its own historical resolution
     // date rather than "now" (which only knows the franchise's current name).
     const isLastTenure = i === rawTenures.length - 1;
-    const isActive = isLastTenure && (tenure.endYear === currentSeason || tenure.endYear === currentSeason - 1);
+    // endYear is the calendar year a season ends in, so the season in progress
+    // ends in currentSeason + 1 from the fall onward. Comparing with == would
+    // miss it and leave every current team unflagged until the new year.
+    const isActive = isLastTenure && tenure.endYear >= currentSeason - 1;
 
     // An ongoing tenure should show the team's *current* branding (the
     // relationship is still active today), not whatever it looked like when
@@ -339,4 +342,63 @@ export async function extractTeams(seasons) {
   }
 
   return tenures;
+}
+
+// Builds the document stored for one player from the NHL landing-page payload.
+// Shared by the weekly updater and new-player discovery so they cannot drift.
+export async function buildPlayerDocument(playerId, data) {
+  const name = stripDiacritics(`${data.firstName?.default || 'Unknown'} ${data.lastName?.default || ''}`.trim());
+  const position = data.position || 'N/A';
+  const career = data.careerTotals?.regularSeason || {};
+
+  return {
+    id: playerId,
+    name,
+    sweaterNumber: data.sweaterNumber || 'N/A',
+    position,
+    silhouette: data.headshot || `https://assets.nhle.com/mugs/nhl/20232024/${playerId}.png`,
+    draft: await getDraftTeamInfo(data.draftDetails),
+    teams: await extractTeams(data.seasonTotals || []),
+    isActive: !!data.isActive,
+    trophies: extractTrophies(data.awards),
+    birth: getBirthInfo(data),
+    hallOfFame: !!data.inHHOF,
+    topAllTime: !!data.inTop100AllTime,
+    stats: position === 'G' ? {
+      games: career.gamesPlayed || 0,
+      wins: career.wins || 0,
+      losses: career.losses || 0,
+      ot: career.otLosses || 0,
+      record: `${career.wins || 0}-${career.losses || 0}-${career.otLosses || 0}`,
+      savePercentage: career.savePctg || 0,
+      goalsAgainstAverage: career.goalsAgainstAvg || 0
+    } : {
+      goals: career.goals || 0,
+      assists: career.assists || 0,
+      points: career.points || 0,
+      games: career.gamesPlayed || 0
+    }
+  };
+}
+
+// Every player id on a current NHL roster (the 32 teams in today's standings).
+// This is how a player who has never been scraped is found: a rookie shows up
+// on a roster before he has any history to search for.
+export async function fetchCurrentRosterPlayerIds() {
+  const { data } = await makeRequestWithRetry('https://api-web.nhle.com/v1/standings/now');
+  const abbrevs = (data.standings || []).map((t) => t.teamAbbrev?.default).filter(Boolean);
+
+  const ids = new Set();
+  const failed = [];
+  for (const abbrev of abbrevs) {
+    try {
+      const { data: roster } = await makeRequestWithRetry(`https://api-web.nhle.com/v1/roster/${abbrev}/current`);
+      for (const group of ['forwards', 'defensemen', 'goalies']) {
+        for (const player of roster[group] || []) ids.add(player.id);
+      }
+    } catch {
+      failed.push(abbrev);
+    }
+  }
+  return { ids, teamCount: abbrevs.length, failed };
 }

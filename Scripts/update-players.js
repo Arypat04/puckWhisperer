@@ -3,11 +3,8 @@ import dotenv from 'dotenv';
 import {
   makeRequestWithRetry,
   runWithConcurrency,
-  getDraftTeamInfo,
-  extractTeams,
-  extractTrophies,
-  getBirthInfo,
-  stripDiacritics
+  buildPlayerDocument,
+  fetchCurrentRosterPlayerIds
 } from './nhlShared.js';
 
 // How many player-landing requests to have in flight at once. Empirically
@@ -26,6 +23,8 @@ class NHLUpdater {
     this.client = new MongoClient(MONGODB_URI);
     this.db = null;
     this.collection = null;
+    // --dry-run: do everything except write, and say what would have changed.
+    this.dryRun = process.argv.includes('--dry-run');
     this.updateStats = {
       total: 0,
       updated: 0,
@@ -162,48 +161,7 @@ class NHLUpdater {
           const statsRes = await makeRequestWithRetry(`https://api-web.nhle.com/v1/player/${oldPlayer.id}/landing`);
           const data = statsRes.data;
 
-          const name = stripDiacritics(`${data.firstName?.default || 'Unknown'} ${data.lastName?.default || ''}`.trim());
-          const sweaterNumber = data.sweaterNumber || 'N/A';
-          const position = data.position || 'N/A';
-          const career = data.careerTotals?.regularSeason || {};
-          const seasons = data.seasonTotals || [];
-
-          const silhouette = data.headshot || `https://assets.nhle.com/mugs/nhl/20232024/${oldPlayer.id}.png`;
-          const draftInfo = await getDraftTeamInfo(data.draftDetails);
-          const teamArray = await extractTeams(seasons);
-          const trophies = extractTrophies(data.awards);
-          const birth = getBirthInfo(data);
-
-          const isActive = !!data.isActive;
-
-          const newPlayerData = {
-            id: oldPlayer.id,
-            name,
-            sweaterNumber,
-            position,
-            silhouette,
-            draft: draftInfo,
-            teams: teamArray,
-            isActive,
-            trophies,
-            birth,
-            hallOfFame: !!data.inHHOF,
-            topAllTime: !!data.inTop100AllTime,
-            stats: position === 'G' ? {
-              games: career.gamesPlayed || 0,
-              wins: career.wins || 0,
-              losses: career.losses || 0,
-              ot: career.otLosses || 0,
-              record: `${career.wins || 0}-${career.losses || 0}-${career.otLosses || 0}`,
-              savePercentage: career.savePctg || 0,
-              goalsAgainstAverage: career.goalsAgainstAvg || 0
-            } : {
-              goals: career.goals || 0,
-              assists: career.assists || 0,
-              points: career.points || 0,
-              games: career.gamesPlayed || 0
-            }
-          };
+          const newPlayerData = await buildPlayerDocument(oldPlayer.id, data);
 
           return { oldPlayer, changes: this.getPlayerChanges(oldPlayer, newPlayerData), newPlayerData };
         } catch (err) {
@@ -239,15 +197,15 @@ class NHLUpdater {
         }
 
         if (batchUpdates.length >= BATCH_SIZE) {
-          await this.collection.bulkWrite(batchUpdates);
-          console.log(`\nProcessed batch of ${batchUpdates.length} updates\n`);
+          if (!this.dryRun) await this.collection.bulkWrite(batchUpdates);
+          console.log(`\n${this.dryRun ? '[dry run] Would process' : 'Processed'} batch of ${batchUpdates.length} updates\n`);
           batchUpdates.length = 0;
         }
       });
 
       if (batchUpdates.length > 0) {
-        await this.collection.bulkWrite(batchUpdates);
-        console.log(`\nProcessed final batch of ${batchUpdates.length} updates`);
+        if (!this.dryRun) await this.collection.bulkWrite(batchUpdates);
+        console.log(`\n${this.dryRun ? '[dry run] Would process' : 'Processed'} final batch of ${batchUpdates.length} updates`);
       }
 
       console.log('\n' + '='.repeat(50));
@@ -265,9 +223,66 @@ class NHLUpdater {
     }
   }
 
+  // Active players, plus anyone whose last season ended recently. A player the
+  // NHL marks inactive while he is an unsigned free agent would otherwise drop
+  // out of the weekly check for good and never pick up his next team.
   async updateActivePlayers() {
-    console.log('Updating active players only...\n');
-    await this.updatePlayersByFilter({ isActive: true });
+    console.log('Updating active and recently active players...\n');
+    const recentSeasonEnd = new Date().getFullYear() - 1;
+    await this.updatePlayersByFilter({
+      $or: [{ isActive: true }, { 'teams.endYear': { $gte: recentSeasonEnd } }]
+    });
+  }
+
+  // 2. Adds players who are on a current roster but not in the database yet
+  // (rookies and newly signed players). Like the full scraper, it only keeps
+  // players with NHL history, so someone with no NHL game yet is skipped and
+  // picked up by a later run once he plays.
+  async discoverNewPlayers() {
+    console.log('\nLooking for players on current rosters who are not in the database...');
+    const { ids, teamCount, failed } = await fetchCurrentRosterPlayerIds();
+    console.log(`Read ${ids.size} roster players across ${teamCount} teams${failed.length ? ` (could not read: ${failed.join(', ')})` : ''}`);
+
+    const known = new Set(
+      (await this.collection.find({ id: { $in: [...ids] } }, { projection: { id: 1 } }).toArray()).map((p) => p.id)
+    );
+    const missing = [...ids].filter((id) => !known.has(id));
+    console.log(`${missing.length} not in the database yet\n`);
+
+    let added = 0;
+    let skipped = 0;
+    await runWithConcurrency(missing, CONCURRENCY, async (playerId) => {
+      try {
+        const { data } = await makeRequestWithRetry(`https://api-web.nhle.com/v1/player/${playerId}/landing`);
+        const doc = await buildPlayerDocument(playerId, data);
+        if (doc.teams.length === 0) return { playerId, name: doc.name, skip: true };
+        return { playerId, doc };
+      } catch (err) {
+        return { playerId, error: err };
+      }
+    }, async (results) => {
+      for (const result of results) {
+        if (result.error) {
+          this.updateStats.errors++;
+          console.log(`  Failed to read player ${result.playerId}: ${result.error.message}`);
+        } else if (result.skip) {
+          skipped++;
+          console.log(`  Skipping ${result.name}: no NHL games yet`);
+        } else {
+          added++;
+          const last = result.doc.teams[result.doc.teams.length - 1];
+          console.log(`  ${this.dryRun ? '[dry run] Would add' : 'Adding'} ${result.doc.name} (${result.doc.position}, ${last.teamAbbrev}, ${result.doc.stats.games} GP)`);
+          if (!this.dryRun) {
+            await this.collection.replaceOne(
+              { id: result.playerId },
+              { ...result.doc, lastUpdated: new Date(), lastScraped: new Date() },
+              { upsert: true }
+            );
+          }
+        }
+      }
+    });
+    console.log(`\nNew players ${this.dryRun ? 'that would be added' : 'added'}: ${added}, skipped (no NHL games yet): ${skipped}`);
   }
 
   async updateAllPlayers() {
@@ -305,7 +320,7 @@ class NHLUpdater {
 
 // CLI interface
 async function main() {
-  const args = process.argv.slice(2);
+  const args = process.argv.slice(2).filter((arg) => !arg.startsWith('--'));
   const command = args[0] || 'active';
 
   const updater = new NHLUpdater();
@@ -316,6 +331,10 @@ async function main() {
     switch (command) {
       case 'active':
         await updater.updateActivePlayers();
+        await updater.discoverNewPlayers();
+        break;
+      case 'discover':
+        await updater.discoverNewPlayers();
         break;
       case 'all':
         await updater.updateAllPlayers();
@@ -351,7 +370,9 @@ async function main() {
         break;
       default:
         console.log('Available commands:');
-        console.log('  active           - Update only active players (default)');
+        console.log('  active           - Update active and recently active players, then add new roster players (default)');
+        console.log('  discover         - Only add players on current rosters who are not in the database yet');
+        console.log('  (add --dry-run to any command to see what would change without writing)');
         console.log('  all              - Update all players');
         console.log('  team TOR         - Update players from specific team');
         console.log('  recent 7         - Update players modified in last X days');

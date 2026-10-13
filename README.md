@@ -112,10 +112,14 @@ With the same `.env` in place, from the repo root:
 
 ```bash
 node Scripts/getNHLPlayers.js        # full scrape of every franchise (resumable: progress is kept in MongoDB)
-node Scripts/update-players.js active   # refresh active players (the default)
+node Scripts/update-players.js active   # the weekly job (the default)
 ```
 
-`update-players.js` also accepts `all`, `team TOR`, `recent 7`, `name McDavid` and `exact "Connor McDavid"`. A GitHub Action runs `active` every Monday at 09:00 UTC (it needs the `MONGODB_URI`, `DB_NAME` and `COLLECTION_NAME` repository secrets).
+`active` does two things. It refreshes every active player and everyone who played in the last two seasons (so a free agent who signs somewhere new is picked up), and then it reads all 32 current rosters and **adds any player who isn't in the database yet**, such as a rookie. Like the full scrape, it only keeps players who have played an NHL game, so someone called up but yet to play is added by a later run.
+
+`update-players.js` also accepts `discover` (only the new-player step), `all`, `team TOR`, `recent 7`, `name McDavid` and `exact "Connor McDavid"`. Add `--dry-run` to any command to see what would change without writing anything.
+
+A GitHub Action runs `active` every Monday at 09:00 UTC (it needs the `MONGODB_URI`, `DB_NAME` and `COLLECTION_NAME` repository secrets).
 
 ## API
 
